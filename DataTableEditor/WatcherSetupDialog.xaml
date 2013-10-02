@@ -1,0 +1,25 @@
+﻿<Window x:Class="DataTableEditor.WatcherSetupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WatcherSetupDialog" Height="482" Width="636">
+    <Grid x:Name="m_gridChange">
+        <TextBlock HorizontalAlignment="Left" Height="17" Margin="10,10,0,0" TextWrapping="Wrap" Text="Feed Type" VerticalAlignment="Top" Width="99"/>
+        <TextBox x:Name="m_sourcePathBox" HorizontalAlignment="Left" Height="22" Margin="176,29,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="365" IsHitTestVisible="True" AllowDrop="True"/>
+        <TextBlock HorizontalAlignment="Left" Height="17" Margin="176,10,0,0" TextWrapping="Wrap" Text="Source URL" VerticalAlignment="Top" Width="104"/>
+        <Button x:Name="m_saveButton" Content="Save" HorizontalAlignment="Left" Height="26" Margin="469,416,0,0" VerticalAlignment="Top" Width="72"/>
+        <ComboBox x:Name="m_recordCombo" HorizontalAlignment="Left" Height="21" Margin="176,73,0,0" VerticalAlignment="Top" Width="365"/>
+        <ComboBox x:Name="m_rowNumber" HorizontalAlignment="Left" VerticalAlignment="Top" Width="40" Margin="57,136,0,0"/>
+        <DataGrid x:Name="m_dataGridChamleon" HorizontalAlignment="Left" Height="278" Margin="142,109,0,0" VerticalAlignment="Top" Width="454"/>
+        <TextBlock HorizontalAlignment="Left" Height="18" Margin="176,56,0,0" TextWrapping="Wrap" Text="Record Path" VerticalAlignment="Top" Width="81"/>
+        <TextBlock x:Name="m_numRowsTextBlock" HorizontalAlignment="Left" Height="17" Margin="12,136,0,0" TextWrapping="Wrap" Text="# Rows" VerticalAlignment="Top" Width="40" RenderTransformOrigin="1.111,0.529"/>
+        <Button x:Name="m_goToNamespaces" Content="Edit Namespaces" HorizontalAlignment="Left" Height="22" Margin="12,109,0,0" VerticalAlignment="Top" Width="97"/>
+        <Button x:Name="m_cancelButton" Content="Cancel" HorizontalAlignment="Left" Height="26" Margin="546,416,0,0" VerticalAlignment="Top" Width="72"/>
+        <Button x:Name="m_clearButton" Content="Clear" HorizontalAlignment="Left" Height="24" Margin="12,416,0,0" VerticalAlignment="Top" Width="97"/>
+        <Button Content="?" HorizontalAlignment="Left" Height="20" Margin="546,74,0,0" VerticalAlignment="Top" Width="21"/>
+        <Button x:Name="h_recordPath" Content="?" HorizontalAlignment="Left" Height="20" Margin="546,74,0,0" VerticalAlignment="Top" Width="21"/>
+        <Button x:Name="h_sourceHelp" Content="?" HorizontalAlignment="Left" Height="20" Margin="546,29,0,0" VerticalAlignment="Top" Width="21"/>
+        <Button x:Name="h_advanceMode" Content="?" HorizontalAlignment="Left" Height="20" Margin="121,58,0,0" VerticalAlignment="Top" Width="21" RenderTransformOrigin="1.762,0.5"/>
+        <CheckBox x:Name="m_recordBox" Content="Simplified Mode" HorizontalAlignment="Left" Margin="12,58,0,0" VerticalAlignment="Top" IsChecked="True" RenderTransformOrigin="0.505,0.5" Checked="m_recordBox_Checked"/>
+        <Button x:Name="h_namespaces" Content="?" HorizontalAlignment="Left" Height="20" Margin="114,109,0,0" VerticalAlignment="Top" Width="21" RenderTransformOrigin="1.762,0.5"/>
+    </Grid>
+</Window>

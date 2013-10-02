@@ -1,0 +1,17 @@
+﻿<Window x:Class="DataTableEditor.NamespaceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NamespaceDialog" Height="337.652" Width="471.397">
+    <Grid>
+        <DataGrid x:Name="m_nstab" HorizontalAlignment="Left" Height="247" Margin="28,19,0,0" VerticalAlignment="Top" Width="408" />
+            <!--<DataGrid.Columns>
+                <DataGridTextColumn Header="Namespace" Binding="{Binding ns, Mode=TwoWay}" Width="200"/>
+                <DataGridTextColumn Header="Namespace URL" Binding="{Binding ns_source, Mode=TwoWay}"  Width="205" />
+            </DataGrid.Columns>
+        </DataGrid> -->
+        <Button x:Name="m_applyNSTable" Content="Apply" HorizontalAlignment="Left" Height="24" Margin="297,271,0,0" VerticalAlignment="Top" Width="66" RenderTransformOrigin="0.529,-0.135"/>
+        <Button x:Name="m_okAndExit" Content="OK" HorizontalAlignment="Left" Height="24" Margin="368,271,0,0" VerticalAlignment="Top" Width="68"/>
+        <Button x:Name="m_addRow" Content="Add Row" HorizontalAlignment="Left" Height="22" Margin="28,273,0,0" VerticalAlignment="Top" Width="90"/>
+
+    </Grid>
+</Window>

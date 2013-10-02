@@ -1,0 +1,52 @@
+﻿<Window x:Class="DataTableEditor.DataTableEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Watch Configuration Editor" Height="437.8" Width="807.646">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Column="0" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="75" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock VerticalAlignment="Center" Grid.Column="0" Grid.Row="0" Text="Server:" />
+            <TextBox Margin="0 0 10 0" Grid.Column="1" Grid.Row="0" Name="m_serverUrl" />
+            <Button Grid.Column="2" Grid.Row="0" Name="m_connectButton" Content="Connect" />
+            <TextBlock VerticalAlignment="Center" Grid.Column="0" Grid.Row="1" Text="DataTable:" />
+            <ComboBox Grid.Column="1" Grid.Row="1" Name="m_tableComboBox" Margin="0 0 10 0">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Grid.Column="2" Grid.Row="1" Orientation="Horizontal">
+                <Button Content="Add row" Name="m_addRowButton" />
+                <Button Content="Save" Name="m_saveRowsButton" Margin="5 0 0 0" />
+            </StackPanel>
+        </Grid>
+        <DataGrid Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Name="m_rowGrid" Margin="402,0,0,0" CanUserAddRows="true" CanUserDeleteRows="true" CanUserReorderColumns="true" CanUserResizeColumns="true" CanUserSortColumns="true" AutoGenerateColumns="false" IsReadOnly="false">
+            
+        </DataGrid>
+        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Orientation="Horizontal">
+            <TextBlock VerticalAlignment="Center" Text="Errors:" Margin="0 5 15 5" />
+            <TextBlock VerticalAlignment="Center" Name="m_errors" Foreground="Red" />
+        </StackPanel>
+        <Button x:Name="m_addTableToWatch" Content="Add to Watch" HorizontalAlignment="Left" Height="24" Margin="12,35,0,0" VerticalAlignment="Top" Width="90" Grid.Row="1"/>
+        <TextBlock HorizontalAlignment="Left" Height="16" Margin="12,14,0,0" Grid.Row="1" TextWrapping="Wrap" Text="Data Table Options:" VerticalAlignment="Top" Width="131"/>
+        <Button x:Name="m_editWatchSets" Content="Edit Watch Settings" HorizontalAlignment="Left" Height="24" Margin="107,35,0,0" Grid.Row="1" VerticalAlignment="Top" Width="129"/>
+    </Grid>
+</Window>
