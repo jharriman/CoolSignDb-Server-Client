@@ -124,7 +124,7 @@ namespace ImportContent
                 }
                 catch (InvalidOperationException)
                 {
-                    Console.WriteLine("Connection/authentication rrror. Reauthenticating before next iteration");
+                    Console.WriteLine("Connection/authentication error. Reauthenticating before next iteration");
                     return -1;
                 }
 
@@ -177,7 +177,7 @@ namespace ImportContent
                         nsmgr.AddNamespace("cap", "urn:oasis:names:tc:emergency:cap:1.1");
                         nsmgr.AddNamespace("atom", "http://www.w3.org/2005/Atom"); */
 
-                        /* (Experimental) Add user specified namespaces [Should add error handling so that program can continue if it fails] */
+                        /* (Experimental) Add user specified namespaces [TODO: Should add error handling so that program can continue if it fails] */
                         foreach (nsConf ns_info in workingConf.ns_list)
                         {
                             nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
