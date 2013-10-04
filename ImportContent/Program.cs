@@ -171,13 +171,8 @@ namespace ImportContent
                         while (retries-- > 0);
                         if (retries <= 0) { break; }
                         XmlNamespaceManager nsmgr = new XmlNamespaceManager(xd.NameTable);
-                        /* Namespace entries (does not have to be exclusive to the entry that uses it, so long as there are no conflicts!) */
-                        /* nsmgr.AddNamespace("yweather", "http://xml.weather.yahoo.com/ns/rss/1.0");
-                        nsmgr.AddNamespace("m", "http://www.w3.org/2005/Atom");
-                        nsmgr.AddNamespace("cap", "urn:oasis:names:tc:emergency:cap:1.1");
-                        nsmgr.AddNamespace("atom", "http://www.w3.org/2005/Atom"); */
-
                         /* (Experimental) Add user specified namespaces [TODO: Should add error handling so that program can continue if it fails] */
+                        /* TODO: Namespace entries do not have to be unique or related to the source using them, could be done all at once much earlier */
                         foreach (nsConf ns_info in workingConf.ns_list)
                         {
                             nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
