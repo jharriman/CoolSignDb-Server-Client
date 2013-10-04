@@ -286,8 +286,6 @@ namespace ImportContent
                     {
                         nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
                     }
-
-                    //nsmgr.AddNamespace("yweather", "http://xml.weather.yahoo.com/ns/rss/1.0");
                     XmlNodeList nodeOfRec = xd.SelectNodes(workingConf.itemOfRec, nsmgr);
                     foreach (XmlNode node in nodeOfRec)
                     {
