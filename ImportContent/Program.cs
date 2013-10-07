@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 using CoolSign.API;
@@ -21,11 +22,57 @@ namespace ImportContent
         [STAThread]
         public static int Main(string[] args)
         {
+            try
+            {
+                IPAddress ipAd = IPAddress.Parse("128.135.167.97");
+                TcpListener listen = new TcpListener(ipAd, 8001);
+                listen.Start();
+                Console.WriteLine("The server is running at port 8001...");
+                Console.WriteLine("The local end point is: " +
+                                  listen.LocalEndpoint);
+                Console.WriteLine("Waiting for a connection.....");
+
+                while (true)
+                {
+                    Socket s = listen.AcceptSocket();
+                    Thread clientThread = new Thread(Program.handleClient);
+                    clientThread.Start(s);
+                }
+                /* clean up */
+                listen.Stop();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error..... " + e.StackTrace);
+            }    
+            //return doWork(); // doWork should be an ongoing thread [Note: we will need some sort of mutex in order to synchronize structural edits from outside users.]
+            return 1; //Remove after constructing server routine
+        }
+
+        public static void handleClient(object data)
+        {
+            Socket s = (Socket)data;
+            Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
+
+            byte[] b = new byte[100];
+            int k = s.Receive(b);
+            Console.WriteLine("Recieved...");
+            for (int i = 0; i < k; i++)
+                Console.Write(Convert.ToChar(b[i]));
+
+            ASCIIEncoding asen = new ASCIIEncoding();
+            s.Send(asen.GetBytes("The string was recieved by the server."));
+            Console.WriteLine("\nSent Acknowledgement");
+        }
+
+        public static int doWork()
+        {
+            /* TODO: Divide this work into proper units */
             int ret = 0;
             Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e)
             {
-                e.Cancel = true;
                 Program.interrupted = true;
+                e.Cancel = true;
             };
             int res;
             string ncHostname = "10.50.149.13";
@@ -43,6 +90,7 @@ namespace ImportContent
             {
                 Console.WriteLine("Updating internal database...");
                 Console.WriteLine((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                //TODO: Add backing up thread to WatchedSets class
                 WatchedSets sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                 foreach (w_set toLoad in sets.all_set)
                 {
@@ -177,7 +225,6 @@ namespace ImportContent
                         {
                             nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
                         }
-
                         XmlNodeList found_nodes = xd.SelectNodes(entry.description, nsmgr);
                         if (entry.firesTrigger)
                         {
@@ -420,95 +467,3 @@ namespace ImportContent
         }
     }
 }
-/* Need info for each source, probs a foreach loop that loops over different source, add functionality later! */
-/*while (reader.Read())
-{
-    switch (reader.NodeType)
-    {
-        case XmlNodeType.Element:
-            if (workingConf.allOneRecord == false) //Why am I doing this one first, it is a much more difficult problem
-            {
-                //Add new rows to the table   
-                IDataRow row = session.ModelFactory.CreateDataRow();
-                row.SequenceNumber = i;
-                row.ActivationDate = new DateTime(1601, 1, 1);
-                row.ExpirationDate = new DateTime(3000, 1, 1);
-                bool nodeUsed = false;
-                foreach (colConf testcols in workingConf.cols)
-                {
-                    if (reader.Name == parseEndOfRecord(testcols.description))
-                    {
-                        if (!String.IsNullOrEmpty(testcols.attrib))
-                        {
-                            row.Values[testcols.name_of_col] = reader.GetAttribute(testcols.name_of_col);
-                        }
-                        else
-                        {
-                            row.Values[testcols.name_of_col] = reader.Value;
-                        }
-                        nodeUsed = true;
-                    }
-                }
-                if (nodeUsed)
-                {
-                    session.DataAccess.Brokers.DataTable.CreateDataRow(changes, targetTable, row);
-                    i++;
-                }
-                break;
-            }
-            else
-            {
-                if (reader.Name = testing)
-                if () //Why am I doing this one first, it is a much more difficult problem
-                {
-                    // Add new rows to the table 
-                    IDataRow row = session.ModelFactory.CreateDataRow();
-                    row.SequenceNumber = i;
-                    row.ActivationDate = new DateTime(1601, 1, 1);
-                    row.ExpirationDate = new DateTime(3000, 1, 1);
-                    bool nodeUsed = false;
-                    foreach (colConf testcols in workingConf.cols)
-                    {
-                        if (reader.Name == parseEndOfRecord(testcols.description))
-                        {
-                            if (!String.IsNullOrEmpty(testcols.attrib))
-                            {
-                                row.Values[testcols.name_of_col] = reader.GetAttribute(testcols.name_of_col);
-                            }
-                            else
-                            {
-                                row.Values[testcols.name_of_col] = reader.Value;
-                            }
-                            nodeUsed = true;
-                        }
-                    }
-                    if (nodeUsed)
-                    {
-                        session.DataAccess.Brokers.DataTable.CreateDataRow(changes, targetTable, row);
-                        i++;
-                    }
-                    break;
-                }
-                ///*
-                if (reader.Name == parseEndOfRecord(workingConf.cols[0].description))
-                {
-                    // Add new rows to the table
-                    IDataRow row = session.ModelFactory.CreateDataRow();
-                    row.SequenceNumber = i;
-                    row.ActivationDate = new DateTime(1601, 1, 1);
-                    row.ExpirationDate = new DateTime(3000, 1, 1);
-                    foreach (IDataTableField field in datatable.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
-                    {
-                        row.Values[field.Name] = reader.GetAttribute(field.Name);
-                    }
-                    session.DataAccess.Brokers.DataTable.CreateDataRow(changes, targetTable, row);
-                    i++;
-                }
-                break;
-                //
-            }
-        default:
-            break;
-
-    }
-}*/
