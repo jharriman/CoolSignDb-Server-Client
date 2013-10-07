@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
@@ -19,9 +20,13 @@ namespace ImportContent
     public static class Program
     {
         public static bool interrupted = false;
+        private static WatchedSets sets;
         [STAThread]
         public static int Main(string[] args)
         {
+            /* Read in database from file */
+            Console.WriteLine("Reading Database ........");
+            sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
             try
             {
                 IPAddress ipAd = IPAddress.Parse("128.135.167.97");
@@ -35,6 +40,7 @@ namespace ImportContent
                 while (true)
                 {
                     Socket s = listen.AcceptSocket();
+                    Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
                     Thread clientThread = new Thread(Program.handleClient);
                     clientThread.Start(s);
                 }
@@ -52,8 +58,6 @@ namespace ImportContent
         public static void handleClient(object data)
         {
             Socket s = (Socket)data;
-            Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
-
             byte[] b = new byte[100];
             int k = s.Receive(b);
             Console.WriteLine("Recieved...");
@@ -88,10 +92,8 @@ namespace ImportContent
             while (!authenticated);
             while (!Program.interrupted)
             {
-                Console.WriteLine("Updating internal database...");
-                Console.WriteLine((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                //TODO: Add backing up thread to WatchedSets class
-                WatchedSets sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                //Console.WriteLine("Updating internal database...");
+                //Console.WriteLine((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                 foreach (w_set toLoad in sets.all_set)
                 {
                     workingConf = new SetConfig(toLoad.TABLE_DB_PATH);

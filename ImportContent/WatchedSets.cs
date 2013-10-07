@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Threading;
 
 
 namespace DataTableEditor
@@ -30,6 +31,10 @@ namespace DataTableEditor
                 }
                 fs.Close();
             }
+
+            /* Setup backup thread */
+            Thread backupRoutine = new Thread(backupDb);
+            backupRoutine.Start(db_path);
         }
         public void addToWatchedSets(string oid_str, string table_name, string table_db_path)
         {
@@ -64,6 +69,17 @@ namespace DataTableEditor
                     sw.Flush();
                 }
                 fs.Close();
+            }
+        }
+        public void backupDb(object db_filepath)
+        {
+            string db_path = (string)db_filepath;
+            while (true)
+            {
+                saveToDbFile(db_path);
+                Console.WriteLine("Backed up database ........");
+                //Thread.Sleep(500);
+                Thread.Sleep(300000);
             }
         }
         public List<w_set> all_set { get; set; }
