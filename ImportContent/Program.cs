@@ -61,13 +61,17 @@ namespace ImportContent
         {
             Socket s = (Socket)data;
             NetworkStream netStream = new NetworkStream(s, true);
-            BinaryReader binWriter = new BinaryReader(netStream);
-            
-            //ClsFileInformation objFileInfo = new ClsFileInformation();
-            MemoryStream fs = new MemoryStream();
             BinaryFormatter binForm = new BinaryFormatter();
-            
-            byte[] b = new byte[100];
+
+            List<w_set> new_sets = (List<w_set>)binForm.Deserialize(netStream);
+            Console.WriteLine("Size of input" + new_sets.Count().ToString());
+            foreach (w_set set in new_sets)
+            {
+                Console.WriteLine("Here :)");
+                Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+            }
+
+            /* byte[] b = new byte[100];
             int k = s.Receive(b);
             Console.WriteLine("Recieved...");
             for (int i = 0; i < k; i++)
@@ -75,7 +79,7 @@ namespace ImportContent
 
             ASCIIEncoding asen = new ASCIIEncoding();
             s.Send(asen.GetBytes("The string was recieved by the server."));
-            Console.WriteLine("\nSent Acknowledgement");
+            Console.WriteLine("\nSent Acknowledgement");*/
         }
 
         public static int doWork()

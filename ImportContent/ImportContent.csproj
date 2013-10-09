@@ -95,8 +95,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="SetConfig.cs" />
-    <Compile Include="WatchedSets.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\Bin\CSMediaPlayer.dll">

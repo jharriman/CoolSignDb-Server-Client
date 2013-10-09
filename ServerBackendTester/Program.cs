@@ -7,6 +7,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using ConfigClasses;
 
 namespace ServerBackendTester
@@ -17,6 +19,7 @@ namespace ServerBackendTester
         {
             try
             {
+                WatchedSets sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                 TcpClient tcpclnt = new TcpClient();
                 Console.WriteLine("Connecting.....");
 
@@ -24,23 +27,33 @@ namespace ServerBackendTester
                 // use the ipaddress as in the server program
 
                 Console.WriteLine("Connected");
-                Console.Write("Enter the string to be transmitted : ");
+                /* Console.Write("Enter the string to be transmitted : ");
 
-                String str = Console.ReadLine();
+                String str = Console.ReadLine(); */
                 Stream stm = tcpclnt.GetStream();
+                BinaryFormatter binForm = new BinaryFormatter();
 
-                ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] ba = asen.GetBytes(str);
+                try
+                {
+                    //binForm.Serialize(stm, sets.all_set);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+
+                /* ASCIIEncoding asen = new ASCIIEncoding();
+                byte[] ba = asen.GetBytes(str);*/
                 Console.WriteLine("Transmitting.....");
 
-                stm.Write(ba, 0, ba.Length);
+                /*stm.Write(ba, 0, ba.Length);
 
                 byte[] bb = new byte[100];
                 int k = stm.Read(bb, 0, 100);
 
                 for (int i = 0; i < k; i++)
                     Console.Write(Convert.ToChar(bb[i]));
-
+*/
                 tcpclnt.Close();
             }
 

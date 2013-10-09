@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace ConfigClasses
 {
-    class SetConfig
+    public class SetConfig
     {
         private string dbPath;
         private char[] DELIMARR = {';'};
@@ -83,7 +83,7 @@ namespace ConfigClasses
             ns_list.Add(new_ns);
         }
     }
-    class colConf
+    public class colConf
     {
         /* Per row settings */
         public string name_of_col;
@@ -93,7 +93,7 @@ namespace ConfigClasses
         public bool firesTrigger;
         public string triggerID; // If firesTrigger is true then trigger ID points to the trigger fired when there is data, else null
     }
-    class nsConf
+    public class nsConf
     {
         public string ns;
         public string ns_source;

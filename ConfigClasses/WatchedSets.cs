@@ -81,8 +81,16 @@ namespace ConfigClasses
                 Thread.Sleep(300000);
             }
         }
+        public void printSets()
+        {
+            foreach(w_set set in all_set)
+            {
+                Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+            }
+        }
         public List<w_set> all_set { get; set; }
     }
+    [Serializable()]
     public class w_set
     {
         public string OID_STR { get; set; }
