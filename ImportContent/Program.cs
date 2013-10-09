@@ -9,11 +9,13 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using CoolSign.API;
 using CoolSign.API.Media;
 using CoolSign.API.Version2;
 using CoolSign.API.Version2.DataAccess;
-using DataTableEditor;
+using ConfigClasses;
 
 namespace ImportContent
 {
@@ -58,6 +60,13 @@ namespace ImportContent
         public static void handleClient(object data)
         {
             Socket s = (Socket)data;
+            NetworkStream netStream = new NetworkStream(s, true);
+            BinaryReader binWriter = new BinaryReader(netStream);
+            
+            //ClsFileInformation objFileInfo = new ClsFileInformation();
+            MemoryStream fs = new MemoryStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            
             byte[] b = new byte[100];
             int k = s.Receive(b);
             Console.WriteLine("Recieved...");

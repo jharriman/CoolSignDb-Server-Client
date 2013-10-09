@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
+using ConfigClasses;
 
 namespace ServerBackendTester
 {
