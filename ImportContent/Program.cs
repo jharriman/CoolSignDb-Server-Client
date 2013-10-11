@@ -32,6 +32,7 @@ namespace ImportContent
             try
             {
                 IPAddress ipAd = IPAddress.Parse("128.135.167.97");
+                TcpClient tcpclnt = new TcpClient();
                 TcpListener listen = new TcpListener(ipAd, 8001);
                 listen.Start();
                 Console.WriteLine("The server is running at port 8001...");
@@ -41,8 +42,8 @@ namespace ImportContent
 
                 while (true)
                 {
-                    Socket s = listen.AcceptSocket();
-                    Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
+                    TcpClient s = listen.AcceptTcpClient();
+                    Console.WriteLine("Connection accepted from " + s.Client.RemoteEndPoint);
                     Thread clientThread = new Thread(Program.handleClient);
                     clientThread.Start(s);
                 }
@@ -59,11 +60,12 @@ namespace ImportContent
 
         public static void handleClient(object data)
         {
-            Socket s = (Socket)data;
-            NetworkStream netStream = new NetworkStream(s, true);
+            TcpClient s = (TcpClient)data;
+            NetworkStream netStream = s.GetStream();
             BinaryFormatter binForm = new BinaryFormatter();
-
             List<w_set> new_sets = (List<w_set>)binForm.Deserialize(netStream);
+            //readFromClient(s);
+            //List<w_set> new_sets = in_set;
             Console.WriteLine("Size of input" + new_sets.Count().ToString());
             foreach (w_set set in new_sets)
             {
@@ -80,6 +82,28 @@ namespace ImportContent
             ASCIIEncoding asen = new ASCIIEncoding();
             s.Send(asen.GetBytes("The string was recieved by the server."));
             Console.WriteLine("\nSent Acknowledgement");*/
+        }
+
+        public static List<w_set> in_set;
+
+        public static async void readFromClient(TcpClient s)
+        {
+            NetworkStream netStream = s.GetStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            List<w_set> new_sets;
+            using (var ms = new MemoryStream())
+            {
+                var buffer = new byte[1028];
+                int bytesRead;
+                while ((bytesRead = await netStream.ReadAsync(buffer, 0, 1028)) > 0)
+                {
+                    ms.Write(buffer, 0, buffer.Length);
+                }
+                var formatter = new BinaryFormatter();
+                var obj = formatter.Deserialize(ms);
+                new_sets = (List<w_set>)obj;
+            }
+            in_set = new_sets;
         }
 
         public static int doWork()

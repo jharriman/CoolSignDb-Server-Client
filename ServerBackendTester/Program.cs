@@ -27,15 +27,19 @@ namespace ServerBackendTester
                 // use the ipaddress as in the server program
 
                 Console.WriteLine("Connected");
-                /* Console.Write("Enter the string to be transmitted : ");
+                /* Console.Write("Enter the string to be transmitted : "); */
 
-                String str = Console.ReadLine(); */
+                String str = Console.ReadLine();
                 Stream stm = tcpclnt.GetStream();
                 BinaryFormatter binForm = new BinaryFormatter();
-
+                foreach (w_set set in sets.all_set)
+                {
+                    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+                }
                 try
                 {
-                    //binForm.Serialize(stm, sets.all_set);
+                    
+                    binForm.Serialize(stm, sets.all_set);
                 }
                 catch (Exception e)
                 {
