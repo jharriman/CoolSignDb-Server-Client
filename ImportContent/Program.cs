@@ -63,14 +63,40 @@ namespace ImportContent
             TcpClient s = (TcpClient)data;
             NetworkStream netStream = s.GetStream();
             BinaryFormatter binForm = new BinaryFormatter();
-            List<w_set> new_sets = (List<w_set>)binForm.Deserialize(netStream);
-            //readFromClient(s);
-            //List<w_set> new_sets = in_set;
-            Console.WriteLine("Size of input" + new_sets.Count().ToString());
-            foreach (w_set set in new_sets)
+            byte[] cmdbuffer = new byte[1024];
+
+            /* Continue serving client until disconnect */
+            while (true)
             {
-                Console.WriteLine("Here :)");
-                Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+                int command = (int)binForm.Deserialize(netStream);
+                switch (command)
+                {
+                    case 1: //add to w_set and create a set config
+                        {
+                            try
+                            {
+                                List<w_set> new_sets = (List<w_set>)binForm.Deserialize(netStream);
+                                foreach (w_set set in new_sets)
+                                {
+                                    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                /* Notify client, and do nothing */
+                            }
+                            break;
+                        }
+                    default:
+                        {
+                            Console.WriteLine("Invalid communiction");
+                            /* Send message back to the client */
+                            break;
+                        }
+                }
+                //readFromClient(s);
+                //List<w_set> new_sets = in_set;
+                
             }
 
             /* byte[] b = new byte[100];

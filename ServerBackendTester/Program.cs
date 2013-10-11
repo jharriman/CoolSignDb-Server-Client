@@ -38,7 +38,7 @@ namespace ServerBackendTester
                 }
                 try
                 {
-                    
+                    binForm.Serialize(stm, 1);
                     binForm.Serialize(stm, sets.all_set);
                 }
                 catch (Exception e)
