@@ -11,7 +11,8 @@ namespace ConfigClasses
     {
         private string dbPath;
         private char[] DELIMARR = {';'};
-        public SetConfig(string db_path)
+        private string DELIM = ";";
+        public SetConfig(string db_path, bool init)
         {
             dbPath = db_path;
             /* Initialize public lists */
@@ -19,42 +20,49 @@ namespace ConfigClasses
             ns_list = new List<nsConf>();
 
             /* Read db into column list */
-            try
+            if (init == false)
             {
-                FileStream fs = File.Open(dbPath, FileMode.Open, FileAccess.Read, FileShare.None); //Add support for this configuration file being edited at the same time.
-                StreamReader sr = new StreamReader(fs);
-                while (!sr.EndOfStream)
+                try
                 {
-                    var parts = sr.ReadLine().Split(DELIMARR, StringSplitOptions.None);
-                    if (parts[0] == ".")
+                    FileStream fs = File.Open(dbPath, FileMode.Open, FileAccess.Read, FileShare.None); //Add support for this configuration file being edited at the same time.
+                    StreamReader sr = new StreamReader(fs);
+                    while (!sr.EndOfStream)
                     {
-                        addToList(parts[1], parts[2], parts[3], parts[4], parts[5].Equals("1"), parts[6]); //ERROR CHECKING!
-                    }
-                    else if (parts[0] == "..") /* Namespace Info */
-                    {
-                        addtoNS_List(parts[1], parts[2]);
-                    }
-                    else if (parts[0] == "...")
-                    {
-                        break;
-                    }
-                    else /* Initial config information */
-                    {
-                        oidForWrite = parts[0];
-                        sourceUrl = parts[1];
-                        allOneRecord = parts[2].Equals("1");
-                        if (allOneRecord) { itemOfRec = parts[3]; }
-                        if (!allOneRecord) { numRows = Convert.ToInt32(parts[3]); }
+                        var parts = sr.ReadLine().Split(DELIMARR, StringSplitOptions.None);
+                        if (parts[0] == ".")
+                        {
+                            addToList(parts[1], parts[2], parts[3], parts[4], parts[5].Equals("1"), parts[6]); //ERROR CHECKING!
+                        }
+                        else if (parts[0] == "..") /* Namespace Info */
+                        {
+                            addtoNS_List(parts[1], parts[2]);
+                        }
+                        else if (parts[0] == "...")
+                        {
+                            break;
+                        }
+                        else /* Initial config information */
+                        {
+                            oidForWrite = parts[0];
+                            sourceUrl = parts[1];
+                            allOneRecord = parts[2].Equals("1");
+                            if (allOneRecord) { itemOfRec = parts[3]; }
+                            if (!allOneRecord) { numRows = Convert.ToInt32(parts[3]); }
 
-                        /* Remember to add error checking */
+                            /* Remember to add error checking */
+                        }
+                        //Console.ReadLine();
                     }
-                    //Console.ReadLine();
+                    sr.Close();
                 }
-                sr.Close();
+                catch (IOException)
+                {
+                    Thread.Sleep(5000);
+                }
             }
-            catch (IOException)
+            else /* Setup init data structure. NOTE: We need this case for WatcherSetupDialog so that it can add new things to it and then send it along the network */
             {
-                Thread.Sleep(5000);
+
             }
         }
         public bool allOneRecord;
@@ -82,7 +90,21 @@ namespace ConfigClasses
             new_ns.ns_source = source;
             ns_list.Add(new_ns);
         }
+        public void printConfig()
+        {
+            Console.WriteLine(oidForWrite + DELIM + sourceUrl + DELIM + allOneRecord.ToString() + DELIM + numRows.ToString());
+            foreach (colConf col in cols)
+            {
+                Console.WriteLine("\t" + col.name_of_col + DELIM + col.description + DELIM + col.attrib + DELIM + col.source + DELIM
+                    + col.firesTrigger.ToString() + DELIM + col.triggerID);
+            }
+            foreach (nsConf ns in ns_list)
+            {
+                Console.WriteLine("\t\t" + ns.ns + DELIM + ns.ns_source);
+            }
+        }
     }
+    [Serializable()]
     public class colConf
     {
         /* Per row settings */
@@ -93,6 +115,7 @@ namespace ConfigClasses
         public bool firesTrigger;
         public string triggerID; // If firesTrigger is true then trigger ID points to the trigger fired when there is data, else null
     }
+    [Serializable()]
     public class nsConf
     {
         public string ns;

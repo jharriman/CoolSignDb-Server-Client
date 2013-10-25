@@ -75,15 +75,20 @@ namespace ImportContent
                         {
                             try
                             {
-                                List<w_set> new_sets = (List<w_set>)binForm.Deserialize(netStream);
-                                foreach (w_set set in new_sets)
+                                List<colConf> new_sets = (List<colConf>)binForm.Deserialize(netStream);
+                                SetConfig hello = new SetConfig("", true);
+                                hello.cols = new_sets;
+                                //hello.printConfig();
+                                /* foreach (w_set set in new_sets)
                                 {
                                     Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
-                                }
+                                }*/
+                                
                             }
                             catch (Exception e)
                             {
                                 /* Notify client, and do nothing */
+                                Console.ReadLine();
                             }
                             break;
                         }
@@ -110,26 +115,40 @@ namespace ImportContent
             Console.WriteLine("\nSent Acknowledgement");*/
         }
 
-        public static List<w_set> in_set;
+        public static List<colConf> in_set;
 
         public static async void readFromClient(TcpClient s)
         {
             NetworkStream netStream = s.GetStream();
             BinaryFormatter binForm = new BinaryFormatter();
-            List<w_set> new_sets;
+            //List<w_set> new_sets;
+            List<colConf> new_sets;
             using (var ms = new MemoryStream())
             {
-                var buffer = new byte[1028];
-                int bytesRead;
-                while ((bytesRead = await netStream.ReadAsync(buffer, 0, 1028)) > 0)
+                try
                 {
-                    ms.Write(buffer, 0, buffer.Length);
+                    var buffer = new byte[1028];
+                    int bytesRead;
+                    while ((bytesRead = await netStream.ReadAsync(buffer, 0, 1028)) > 0)
+                    {
+                        ms.Write(buffer, 0, buffer.Length);
+                    }
+                    var formatter = new BinaryFormatter();
+                    ms.Position = 0;
+                    var obj = formatter.Deserialize(ms);
+                    new_sets = (List<colConf>)obj;
+                    in_set = new_sets;
                 }
-                var formatter = new BinaryFormatter();
-                var obj = formatter.Deserialize(ms);
-                new_sets = (List<w_set>)obj;
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.ReadLine();
+                }
             }
-            in_set = new_sets;
+            
+            SetConfig newConfig = new SetConfig("", true);
+            newConfig.cols = in_set;
+            newConfig.printConfig();
         }
 
         public static int doWork()
@@ -159,7 +178,7 @@ namespace ImportContent
                 //Console.WriteLine((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                 foreach (w_set toLoad in sets.all_set)
                 {
-                    workingConf = new SetConfig(toLoad.TABLE_DB_PATH);
+                    workingConf = new SetConfig(toLoad.TABLE_DB_PATH, false);
                     res = importItem(session, workingConf);
                     Console.WriteLine("Updating table: " + toLoad.TABLE_NAME);
                     if (res == 2) //Server Timeout
