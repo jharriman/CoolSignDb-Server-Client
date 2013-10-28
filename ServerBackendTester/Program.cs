@@ -20,7 +20,11 @@ namespace ServerBackendTester
             try
             {
                 WatchedSets sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                SetConfig sendone = new SetConfig((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + sets.all_set[0]), false);
+                Console.WriteLine(sets.all_set[0].TABLE_DB_PATH);
+                SetConfig sendone = new SetConfig(sets.all_set[0].TABLE_DB_PATH, false);
+                sendone.all_props.numRows = (sendone.all_props.numRows == 5 ? 6 : 5);
+                sendone.printConfig();
+                Console.ReadLine();
                 TcpClient tcpclnt = new TcpClient();
                 Console.WriteLine("Connecting.....");
 
@@ -33,14 +37,11 @@ namespace ServerBackendTester
                 String str = Console.ReadLine();
                 Stream stm = tcpclnt.GetStream();
                 BinaryFormatter binForm = new BinaryFormatter();
-                /*foreach (w_set set in sets.all_set)
-                {
-                    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
-                }*/
-                List<colConf> sendcols = sendone.cols;
+                setProps sendcols = sendone.all_props;
                 try
                 {
-                    binForm.Serialize(stm, 1);
+                    int command = 1;
+                    binForm.Serialize(stm, command);
                     stm.Flush();
                     binForm.Serialize(stm, sendcols);
                     stm.Flush();

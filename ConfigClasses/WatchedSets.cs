@@ -14,6 +14,7 @@ namespace ConfigClasses
         {
             /* Initialize database list */
             all_set = new List<w_set>();
+            configs = new List<SetConfig>();
 
             /* Read in database */
             using (FileStream fs = File.Open(db_path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
@@ -29,6 +30,13 @@ namespace ConfigClasses
                     addToWatchedSets(oid, tb_name, tb_db);
                 }
                 fs.Close();
+            }
+
+            /* Create list of SetConfigs */
+            foreach (w_set w in all_set)
+            {
+                SetConfig new_config = new SetConfig(w.TABLE_DB_PATH, false);
+                configs.Add(new_config);
             }
 
             /* Setup backup thread */
@@ -65,6 +73,11 @@ namespace ConfigClasses
                 foreach(w_set write_set in all_set)
                 {
                     sw.WriteLine(write_set.OID_STR + DELIM + write_set.TABLE_NAME + DELIM + write_set.TABLE_DB_PATH);
+                    SetConfig s;
+                    if ((s = isInWatched(write_set.OID_STR)) != null)
+                    {
+                        s.saveConfig(write_set.TABLE_DB_PATH);
+                    }
                     sw.Flush();
                 }
                 fs.Close();
@@ -88,7 +101,19 @@ namespace ConfigClasses
                 Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
             }
         }
+        public SetConfig isInWatched(string oid)
+        {
+            foreach (SetConfig s in configs)
+            {
+                if (s.all_props.oidForWrite == oid)
+                {
+                    return s;
+                }
+            }
+            return null;
+        }
         public List<w_set> all_set { get; set; }
+        public List<SetConfig> configs { get; set; }
     }
     [Serializable()]
     public class w_set

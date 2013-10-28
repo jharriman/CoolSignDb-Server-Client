@@ -12,12 +12,16 @@ namespace ConfigClasses
         private string dbPath;
         private char[] DELIMARR = {';'};
         private string DELIM = ";";
+        /* Initialize properties class */
+        public setProps all_props = new setProps();
+        
         public SetConfig(string db_path, bool init)
         {
             dbPath = db_path;
+
             /* Initialize public lists */
-            cols = new List<colConf>();
-            ns_list = new List<nsConf>();
+            all_props.cols = new List<colConf>();
+            all_props.ns_list = new List<nsConf>();
 
             /* Read db into column list */
             if (init == false)
@@ -43,11 +47,11 @@ namespace ConfigClasses
                         }
                         else /* Initial config information */
                         {
-                            oidForWrite = parts[0];
-                            sourceUrl = parts[1];
-                            allOneRecord = parts[2].Equals("1");
-                            if (allOneRecord) { itemOfRec = parts[3]; }
-                            if (!allOneRecord) { numRows = Convert.ToInt32(parts[3]); }
+                            all_props.oidForWrite = parts[0];
+                            all_props.sourceUrl = parts[1];
+                            all_props.allOneRecord = parts[2].Equals("1");
+                            if (all_props.allOneRecord) { all_props.itemOfRec = parts[3]; }
+                            if (!all_props.allOneRecord) { all_props.numRows = Convert.ToInt32(parts[3]); }
 
                             /* Remember to add error checking */
                         }
@@ -65,44 +69,70 @@ namespace ConfigClasses
 
             }
         }
-        public bool allOneRecord;
-        public string itemOfRec; //If set to null then allOneRecord must be set to false
-        public string oidForWrite;
-        public string sourceUrl;
-        public int numRows;
-        public List<colConf> cols { get; set; }
         public void addToList(string name_of_col, string description, string attrib, string source, bool trigger, string trigger_id)
         {
             colConf to_add = new colConf();
             to_add.name_of_col = name_of_col;
             to_add.description = description;
             to_add.attrib = attrib;
-            if (!allOneRecord) { to_add.source = source; }
+            if (!all_props.allOneRecord) { to_add.source = source; }
             if (trigger) { to_add.firesTrigger = true; to_add.triggerID = trigger_id; }
             else { to_add.firesTrigger = false; }
-            cols.Add(to_add);
+            all_props.cols.Add(to_add);
         }
-        public List<nsConf> ns_list { get; set; }
         public void addtoNS_List(string ns, string source)
         {
             nsConf new_ns = new nsConf();
             new_ns.ns = ns;
             new_ns.ns_source = source;
-            ns_list.Add(new_ns);
+            all_props.ns_list.Add(new_ns);
         }
         public void printConfig()
         {
-            Console.WriteLine(oidForWrite + DELIM + sourceUrl + DELIM + allOneRecord.ToString() + DELIM + numRows.ToString());
-            foreach (colConf col in cols)
+            Console.WriteLine(all_props.oidForWrite + DELIM + all_props.sourceUrl + DELIM + all_props.allOneRecord.ToString() + DELIM + all_props.numRows.ToString());
+            foreach (colConf col in all_props.cols)
             {
                 Console.WriteLine("\t" + col.name_of_col + DELIM + col.description + DELIM + col.attrib + DELIM + col.source + DELIM
                     + col.firesTrigger.ToString() + DELIM + col.triggerID);
             }
-            foreach (nsConf ns in ns_list)
+            foreach (nsConf ns in all_props.ns_list)
             {
                 Console.WriteLine("\t\t" + ns.ns + DELIM + ns.ns_source);
             }
         }
+        /* TODO: Saving function */
+        public void saveConfig(string db_path)
+        {
+            using (FileStream fs = File.Open(db_path, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                StreamWriter sw = new StreamWriter(fs);
+                sw.WriteLine(all_props.oidForWrite + DELIM + all_props.sourceUrl + DELIM + (all_props.allOneRecord? "1" : "0") + DELIM + all_props.numRows);
+                foreach (colConf c in all_props.cols)
+                {
+                    sw.WriteLine("." + DELIM + c.name_of_col + DELIM + c.description + DELIM + c.attrib + DELIM + c.source + DELIM +
+                        (c.firesTrigger ? "1" : "0") + DELIM + c.triggerID + DELIM);
+                    sw.Flush();
+                }
+                foreach (nsConf n in all_props.ns_list)
+                {
+                    sw.WriteLine(".." + DELIM + n.ns + DELIM + n.ns_source + DELIM);
+                    sw.Flush();
+                }
+                sw.WriteLine("...");
+                fs.Close();
+            }
+        }
+    }
+    [Serializable()]
+    public class setProps
+    {
+        public bool allOneRecord;
+        public string itemOfRec; //If set to null then allOneRecord must be set to false
+        public string oidForWrite;
+        public string sourceUrl;
+        public int numRows;
+        public List<colConf> cols { get; set; }
+        public List<nsConf> ns_list { get; set; }
     }
     [Serializable()]
     public class colConf

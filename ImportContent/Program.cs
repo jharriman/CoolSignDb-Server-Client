@@ -29,6 +29,10 @@ namespace ImportContent
             /* Read in database from file */
             Console.WriteLine("Reading Database ........");
             sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+            /*Console.WriteLine(sets.all_set[0].TABLE_DB_PATH);
+            SetConfig sendone = new SetConfig(sets.all_set[0].TABLE_DB_PATH, false);
+            sendone.printConfig();
+            Console.ReadLine();*/
             try
             {
                 IPAddress ipAd = IPAddress.Parse("128.135.167.97");
@@ -62,32 +66,60 @@ namespace ImportContent
         {
             TcpClient s = (TcpClient)data;
             NetworkStream netStream = s.GetStream();
-            BinaryFormatter binForm = new BinaryFormatter();
+            IFormatter binForm = new BinaryFormatter();
             byte[] cmdbuffer = new byte[1024];
 
             /* Continue serving client until disconnect */
             while (true)
             {
+                Console.ReadLine();
                 int command = (int)binForm.Deserialize(netStream);
+                netStream.Flush();
                 switch (command)
                 {
-                    case 1: //add to w_set and create a set config
+                    case 1: //edit existing set and ensure edit is valid
                         {
                             try
                             {
-                                List<colConf> new_sets = (List<colConf>)binForm.Deserialize(netStream);
-                                SetConfig hello = new SetConfig("", true);
-                                hello.cols = new_sets;
-                                //hello.printConfig();
-                                /* foreach (w_set set in new_sets)
+                                setProps propsFromSend = (setProps)binForm.Deserialize(netStream);
+                                SetConfig setInList;
+                                if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
                                 {
-                                    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
-                                }*/
-                                
+                                    /* Put the edited setings into the configuation class */
+                                    setInList.all_props = propsFromSend;
+
+                                    /* Force a backup immediately after change has been accepted */
+                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                                }
+                                else
+                                {
+                                    /* TODO: Warn client that this set is not in the list */
+                                }                                
                             }
                             catch (Exception e)
                             {
-                                /* Notify client, and do nothing */
+                                // Notify client, and do nothing
+                                Console.ReadLine();
+                            }
+                            break;
+                        }
+                    case 2: // add a new set config to the watched sets
+                        {
+                            try
+                            {
+                                setProps propsToSend = (setProps)binForm.Deserialize(netStream);
+                                SetConfig hello = new SetConfig("", true);
+                                hello.all_props = propsToSend;
+                                hello.printConfig();
+                                //foreach (w_set set in new_sets)
+                                //{
+                                //    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
+                                //}
+
+                            }
+                            catch (Exception e)
+                            {
+                                // Notify client, and do nothing
                                 Console.ReadLine();
                             }
                             break;
@@ -117,7 +149,7 @@ namespace ImportContent
 
         public static List<colConf> in_set;
 
-        public static async void readFromClient(TcpClient s)
+        /*public static async void readFromClient(TcpClient s)
         {
             NetworkStream netStream = s.GetStream();
             BinaryFormatter binForm = new BinaryFormatter();
@@ -149,7 +181,7 @@ namespace ImportContent
             SetConfig newConfig = new SetConfig("", true);
             newConfig.cols = in_set;
             newConfig.printConfig();
-        }
+        }*/
 
         public static int doWork()
         {
@@ -228,7 +260,7 @@ namespace ImportContent
             {
                 /*string ncHostname = "10.50.149.13";
                 int ncPort = 80;9(*/
-                Oid targetTable = new Oid(workingConf.oidForWrite);
+                Oid targetTable = new Oid(workingConf.all_props.oidForWrite);
 
                 //using (session /*IServerSession session = CSAPI.Create().CreateServerSession(ncHostname, ncPort)*/)
                 //{
@@ -269,12 +301,12 @@ namespace ImportContent
                 /* TODO: Allow support for appending to tables instead of a fixed number of rows */
 
                 int i = 1;
-                if (workingConf.allOneRecord == false)
+                if (workingConf.all_props.allOneRecord == false)
                 {
                     List<List<string>> col_lists = new List<List<string>>();
                     List<IChangeSet> trigger_changes = new List<IChangeSet>();
                     /* TODO: Fork the process so that general datatable updates don't have to happen unless there is a change in the state of the triggered table */
-                    foreach (colConf entry in workingConf.cols)
+                    foreach (colConf entry in workingConf.all_props.cols)
                     {
                         List<string> col_vals = new List<string>();
                         col_vals.Add(entry.name_of_col);
@@ -305,7 +337,7 @@ namespace ImportContent
                         XmlNamespaceManager nsmgr = new XmlNamespaceManager(xd.NameTable);
                         /* (Experimental) Add user specified namespaces [TODO: Should add error handling so that program can continue if it fails] */
                         /* TODO: Namespace entries do not have to be unique or related to the source using them, could be done all at once much earlier */
-                        foreach (nsConf ns_info in workingConf.ns_list)
+                        foreach (nsConf ns_info in workingConf.all_props.ns_list)
                         {
                             nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
                         }
@@ -367,7 +399,7 @@ namespace ImportContent
                         col_lists.Add(col_vals);
 
                     }
-                    for (int j = 1; j <= workingConf.numRows; j++)
+                    for (int j = 1; j <= workingConf.all_props.numRows; j++)
                     {
                         /* Add new rows to the table */
                         IDataRow row = session.ModelFactory.CreateDataRow();
@@ -402,17 +434,17 @@ namespace ImportContent
                 {
                     /* TODO: Add a generic trigger to sources that are all on one record */
                     /* Access the Xml data source */
-                    String URLString = workingConf.sourceUrl;
+                    String URLString = workingConf.all_props.sourceUrl;
                     XmlDocument xd = new XmlDocument();
                     xd.Load(URLString);
                     XmlNamespaceManager nsmgr = new XmlNamespaceManager(xd.NameTable);
 
                     /* (Experimental) Add user specified namespaces [Should add error handling so that program can continue if it fails] */
-                    foreach (nsConf ns_info in workingConf.ns_list)
+                    foreach (nsConf ns_info in workingConf.all_props.ns_list)
                     {
                         nsmgr.AddNamespace(ns_info.ns, ns_info.ns_source);
                     }
-                    XmlNodeList nodeOfRec = xd.SelectNodes(workingConf.itemOfRec, nsmgr);
+                    XmlNodeList nodeOfRec = xd.SelectNodes(workingConf.all_props.itemOfRec, nsmgr);
                     foreach (XmlNode node in nodeOfRec)
                     {
                         //Add new rows to the table   
@@ -424,7 +456,7 @@ namespace ImportContent
                         {
                             foreach (XmlNode cnode in node.ChildNodes)
                             {
-                                foreach (colConf testcols in workingConf.cols)
+                                foreach (colConf testcols in workingConf.all_props.cols)
                                 {
                                     if (testcols.description == cnode.Name)
                                     {
@@ -445,7 +477,7 @@ namespace ImportContent
                             XmlAttributeCollection xac = node.Attributes;
                             foreach (XmlAttribute xa in xac)
                             {
-                                foreach (colConf testcols in workingConf.cols)
+                                foreach (colConf testcols in workingConf.all_props.cols)
                                 {
                                     if (testcols.attrib == xa.Name)
                                     {
