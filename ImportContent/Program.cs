@@ -85,11 +85,14 @@ namespace ImportContent
                                 SetConfig setInList;
                                 if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
                                 {
+                                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
+
                                     /* Put the edited setings into the configuation class */
                                     setInList.all_props = propsFromSend;
 
                                     /* Force a backup immediately after change has been accepted */
                                     sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                                                                        
                                 }
                                 else
                                 {
