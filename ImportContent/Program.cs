@@ -92,7 +92,6 @@ namespace ImportContent
 
                                     /* Force a backup immediately after change has been accepted */
                                     sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                                                                        
                                 }
                                 else
                                 {
@@ -110,21 +109,71 @@ namespace ImportContent
                         {
                             try
                             {
+                                w_set setToAdd = (w_set)binForm.Deserialize(netStream);
                                 setProps propsToSend = (setProps)binForm.Deserialize(netStream);
-                                SetConfig hello = new SetConfig("", true);
-                                hello.all_props = propsToSend;
-                                hello.printConfig();
-                                //foreach (w_set set in new_sets)
-                                //{
-                                //    Console.Write(set.OID_STR + "\n\t" + set.TABLE_NAME + "\n\t" + set.TABLE_DB_PATH + "\n");
-                                //}
-
+                                SetConfig newConfig = new SetConfig("", true);
+                                SetConfig isInConfigs;
+                                if ((isInConfigs = sets.isInWatched(propsToSend.oidForWrite)) == null)
+                                {
+                                    Console.WriteLine("Here!");
+                                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
+                                    
+                                    newConfig.all_props = propsToSend;
+                                    sets.all_set.Add(setToAdd);
+                                    sets.configs.Add(newConfig);
+                                    
+                                    /* Force immediate backup */
+                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                                }
+                                else
+                                {
+                                    /* TODO: Notify client that configuration is already in the set */
+                                }
                             }
                             catch (Exception e)
                             {
                                 // Notify client, and do nothing
                                 Console.ReadLine();
                             }
+                            break;
+                        }
+                    case 3: // Remove a configuration from the set
+                        {
+                            try
+                            {
+                                string oid_from_client = (string)binForm.Deserialize(netStream);
+                                w_set inSet;
+                                if ((inSet = sets.w_setInAllSet(oid_from_client)) != null)
+                                {
+                                    SetConfig toRemove = sets.isInWatched(oid_from_client);
+                                    sets.all_set.Remove(inSet);
+                                    sets.configs.Remove(toRemove);
+                                    /* TODO : Set up server-side logging */
+
+                                    /* Force immediate backup */
+                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+                                }
+                                else
+                                {
+                                    /* TODO : Send Error to client */
+                                }
+                            }
+                            catch(Exception e)
+                            {
+                                Console.ReadLine();
+                            }
+                        }
+                        break;
+                    case 4: // Client requests list of WatchedSets information
+                        {
+                            break;
+                        }
+                    case 5: // Client requests to update a particular WatchedSet (Mutex!)
+                        {
+                            break;
+                        }
+                    case 6: // Client requests log report (Authentication, possibly?)
+                        {
                             break;
                         }
                     default:
@@ -151,40 +200,6 @@ namespace ImportContent
         }
 
         public static List<colConf> in_set;
-
-        /*public static async void readFromClient(TcpClient s)
-        {
-            NetworkStream netStream = s.GetStream();
-            BinaryFormatter binForm = new BinaryFormatter();
-            //List<w_set> new_sets;
-            List<colConf> new_sets;
-            using (var ms = new MemoryStream())
-            {
-                try
-                {
-                    var buffer = new byte[1028];
-                    int bytesRead;
-                    while ((bytesRead = await netStream.ReadAsync(buffer, 0, 1028)) > 0)
-                    {
-                        ms.Write(buffer, 0, buffer.Length);
-                    }
-                    var formatter = new BinaryFormatter();
-                    ms.Position = 0;
-                    var obj = formatter.Deserialize(ms);
-                    new_sets = (List<colConf>)obj;
-                    in_set = new_sets;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    Console.ReadLine();
-                }
-            }
-            
-            SetConfig newConfig = new SetConfig("", true);
-            newConfig.cols = in_set;
-            newConfig.printConfig();
-        }*/
 
         public static int doWork()
         {

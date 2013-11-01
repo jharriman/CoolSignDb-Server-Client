@@ -40,9 +40,10 @@ namespace ServerBackendTester
                 setProps sendcols = sendone.all_props;
                 try
                 {
-                    int command = 1;
+                    int command = 2;
                     binForm.Serialize(stm, command);
                     stm.Flush();
+                    binForm.Serialize(stm, sets.all_set[0]);
                     binForm.Serialize(stm, sendcols);
                     stm.Flush();
                     

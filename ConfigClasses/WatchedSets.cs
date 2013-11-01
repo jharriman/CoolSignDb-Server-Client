@@ -64,6 +64,17 @@ namespace ConfigClasses
             }
             return inSet;
         }
+        public w_set w_setInAllSet(string oid_str)
+        {
+            foreach (w_set test_set in all_set)
+            {
+                if (test_set.OID_STR == oid_str)
+                {
+                    return test_set;
+                }
+            }
+            return null;
+        }
         public void saveToDbFile(string db_path)
         {
             /* Open file using FileMode.Create in order to overwrite existing database file */
