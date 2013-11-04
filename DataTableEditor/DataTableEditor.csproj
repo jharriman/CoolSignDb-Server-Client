@@ -96,7 +96,6 @@
     <Compile Include="NamespaceDialog.xaml.cs">
       <DependentUpon>NamespaceDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="SetConfig.cs" />
     <Compile Include="WatcherSetupDialog.xaml.cs">
       <DependentUpon>WatcherSetupDialog.xaml</DependentUpon>
     </Compile>
@@ -112,7 +111,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="WatchedSets.cs" />
     <Compile Include="DataTableEditorWindow.xaml.cs">
       <DependentUpon>DataTableEditorWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -183,6 +181,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="dblist.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigClasses\ConfigClasses.csproj">
+      <Project>{3fbc677f-8901-424e-8ce6-f0eb059dfa61}</Project>
+      <Name>ConfigClasses</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

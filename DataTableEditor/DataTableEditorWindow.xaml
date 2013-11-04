@@ -39,7 +39,7 @@
             </StackPanel>
         </Grid>
         <DataGrid Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Name="m_rowGrid" Margin="402,0,0,0" CanUserAddRows="true" CanUserDeleteRows="true" CanUserReorderColumns="true" CanUserResizeColumns="true" CanUserSortColumns="true" AutoGenerateColumns="false" IsReadOnly="false">
-            
+
         </DataGrid>
         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Orientation="Horizontal">
             <TextBlock VerticalAlignment="Center" Text="Errors:" Margin="0 5 15 5" />
@@ -48,5 +48,6 @@
         <Button x:Name="m_addTableToWatch" Content="Add to Watch" HorizontalAlignment="Left" Height="24" Margin="12,35,0,0" VerticalAlignment="Top" Width="90" Grid.Row="1"/>
         <TextBlock HorizontalAlignment="Left" Height="16" Margin="12,14,0,0" Grid.Row="1" TextWrapping="Wrap" Text="Data Table Options:" VerticalAlignment="Top" Width="131"/>
         <Button x:Name="m_editWatchSets" Content="Edit Watch Settings" HorizontalAlignment="Left" Height="24" Margin="107,35,0,0" Grid.Row="1" VerticalAlignment="Top" Width="129"/>
+        <Button x:Name="m_establishConnection" Content="Connect to Watch Server" HorizontalAlignment="Left" Height="22" Margin="12,64,0,0" Grid.Row="1" VerticalAlignment="Top" Width="152"/>
     </Grid>
 </Window>

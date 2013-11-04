@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Text;
 using System.IO;
 using System.Threading;
@@ -18,6 +22,7 @@ using Microsoft.Win32;
 using CoolSign.API;
 using CoolSign.API.Version1;
 using CoolSign.API.Version1.DataAccess;
+using ConfigClasses;
 
 namespace DataTableEditor
 {
@@ -32,6 +37,7 @@ namespace DataTableEditor
         private ObservableCollection<IDataRow> m_rows;
         private ObservableCollection<IFileInDataTable> m_files;
         private WatchedSets dbsets;
+        private TcpClient client;
 
         public DataTableEditorWindow()
         {
@@ -47,6 +53,22 @@ namespace DataTableEditor
             m_saveRowsButton.Click += m_saveRowsButton_Click;
             m_addTableToWatch.Click += m_addTableToWatch_Click;
             m_editWatchSets.Click += m_editWatchSets_Click;
+            m_establishConnection.Click += m_establishConnection_Click;
+        }
+
+        void m_establishConnection_Click(object sender, RoutedEventArgs e)
+        {
+            TcpClient tcpclnt = new TcpClient();
+            Console.WriteLine("Connecting.....");
+
+            tcpclnt.Connect("128.135.167.97", 8001);
+            // use the ipaddress as in the server program
+
+            Console.WriteLine("Connected");
+            /* Console.Write("Enter the string to be transmitted : "); */
+
+            client = tcpclnt;
+            MessageBox.Show("Connected!");
         }
 
         public void OnLoad()
@@ -76,7 +98,7 @@ namespace DataTableEditor
                 if (dbsets.isInAllSet((string)m_table.Id))
                 {
                     /* Start configuration/setup dialog */
-                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, true);
+                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, true, client);
                     bool? result = wsd.ShowDialog();
 
                 }
@@ -95,7 +117,7 @@ namespace DataTableEditor
                 if (!dbsets.isInAllSet((string)m_table.Id))
                 {
                     /* Start configuration/setup dialog */
-                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, false);
+                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, false, client);
                     bool? result = wsd.ShowDialog();
 
                     /* Make sure the addition wasn't canceled */

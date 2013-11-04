@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.IO;
@@ -18,6 +21,7 @@ using System.Xml;
 using CoolSign.API;
 using CoolSign.API.Version1;
 using CoolSign.API.Version1.DataAccess;
+using ConfigClasses;
 
 namespace DataTableEditor
 { 
@@ -32,12 +36,15 @@ namespace DataTableEditor
         private List<nsConf> ns_to_write;
         private char DELIM = ';';
         public bool allOneRecord = true;
-        public WatcherSetupDialog(string db_path, string table_oid, IDataTable table_to_edit, bool editing)
+        private TcpClient tcpclnt;
+        private bool isEdit;
+        public WatcherSetupDialog(string db_path, string table_oid, IDataTable table_to_edit, bool editing, TcpClient client)
         {
-            /* TODO: Server-side integration */
             pathToDb = db_path;
             tbl_OID = table_oid;
             tableToEdit = table_to_edit;
+            tcpclnt = client;
+            isEdit = editing;
             InitializeComponent();
 
             /* Functionality buttons */
@@ -205,7 +212,8 @@ namespace DataTableEditor
             /* Edit Init */
             if (editing)
             {
-                SetConfig init_config = new SetConfig(db_path);
+                /*
+                SetConfig init_config = new SetConfig(db_path, false);
                 ns_to_write = init_config.ns_list;
                 allOneRecord = init_config.allOneRecord;
                 if (allOneRecord)
@@ -247,14 +255,14 @@ namespace DataTableEditor
                 }
                 else
                 {
-                    /* Clean up from previous state */
+                    // Clean up from previous state
                     m_sourcePathBox.IsEnabled = false;
                     m_recordCombo.IsEnabled = false;
                     m_recordBox.IsChecked = false;
                     m_rowNumber.Visibility = System.Windows.Visibility.Visible;
                     m_numRowsTextBlock.Visibility = System.Windows.Visibility.Visible;
 
-                    /* Add names of data sources */
+                    // Add names of data sources
                     string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150" };
                     List<uncheckedData> addToGrid = new List<uncheckedData>();
                     int k = 0;
@@ -276,7 +284,7 @@ namespace DataTableEditor
                     m_dataGridChamleon.ItemsSource = addToGrid;
                     m_dataGridChamleon.ItemsSource = addToGrid;
 
-                    /* Update column names */
+                    // Update column names
                     int i = 0;
                     foreach (DataGridColumn col in m_dataGridChamleon.Columns)
                     {
@@ -294,7 +302,7 @@ namespace DataTableEditor
                     }
                     m_rowNumber.ItemsSource = row_num_options;
                     m_rowNumber.SelectedIndex = init_config.numRows - 1;
-                }
+                } */
             }
             else /* Add Init */
             {
@@ -365,9 +373,10 @@ namespace DataTableEditor
         
         void m_goToNamespaces_Click(object sender, RoutedEventArgs e)
         {
-            NamespaceDialog2 nd = new NamespaceDialog2(ns_to_write);
+            /* NamespaceDialog2 nd = new NamespaceDialog2(ns_to_write);
             bool? result = nd.ShowDialog();
-            if (result.Value == true) { ns_to_write = nd.ns_to_write; }
+            if (result.Value == true) { ns_to_write = nd.ns_to_write; }*/
+            MessageBox.Show("Not Implemented!");
         }
 
         void m_saveButton_Click(object sender, RoutedEventArgs e)
@@ -496,6 +505,96 @@ namespace DataTableEditor
                     }
                 }
             } while (retries <= 9);
+
+            // Send file to the server
+            // TODO: Wait for confirmation of receipt from the server
+            Stream stm = tcpclnt.GetStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            int command = isEdit ? 1 : 2;
+            binForm.Serialize(stm, command);
+            setProps new_props = new setProps();
+            new_props.cols = new List<colConf>();
+            new_props.ns_list = new List<nsConf>();
+            new_props.allOneRecord = allOneRecord;
+            new_props.sourceUrl = (allOneRecord ? m_sourcePathBox.Text : "");
+            new_props.itemOfRec = m_recordCombo.Text;
+            new_props.numRows = Convert.ToInt32(m_rowNumber.Text);
+            if (allOneRecord)
+            {
+                foreach (checkedData data in m_dataGridChamleon.ItemsSource)
+                {
+                    string xml_attrib = "";
+                    string xml_path = "";
+                    if (data.Xml_Path != null)
+                    {
+                        if (data.Xml_Path.Contains('@'))
+                        {
+                            var parts = data.Xml_Path.Split(new char[] { '@' }, StringSplitOptions.None);
+                            xml_path = parts[0];
+                            xml_attrib = parts[1];
+                        }
+                        else { xml_path = data.Xml_Path; }
+                    }
+                    else { xml_path = data.Xml_Path; }
+                    new_props.cols.Add(new colConf()
+                    {
+                        name_of_col = data.Column_Name,
+                        attrib = xml_attrib,
+                        description = xml_path
+                    });
+                }
+            }
+            else
+            {
+                foreach (uncheckedData data in m_dataGridChamleon.ItemsSource)
+                {
+                    /* Parsing data.xml_path for attributes */
+                    string xml_attrib = "";
+                    string xml_path = "";
+                    if (data.xml_path != null)
+                    {
+                        if (data.xml_path.Contains('@'))
+                        {
+                            var parts = data.xml_path.Split(new char[] { '@' }, StringSplitOptions.None);
+                            xml_path = parts[0];
+                            xml_attrib = parts[1];
+                        }
+                        else { xml_path = data.xml_path; }
+                    }
+                    else { xml_path = data.xml_path; }
+                    colConf new_conf = new colConf();
+                    new_conf.name_of_col = data.column_name;
+                    new_conf.attrib = xml_attrib;
+                    new_conf.description = xml_path;
+                    new_conf.firesTrigger = data.is_triggerable;
+                    new_conf.triggerID = data.trigger_source;
+                    new_conf.source = data.source;
+                    new_props.cols.Add(new_conf);
+
+                }
+            }
+            w_set new_w_set = new w_set();
+            new_w_set.OID_STR = tbl_OID;
+            new_w_set.TABLE_DB_PATH = pathToDb;
+            new_w_set.TABLE_NAME = tableToEdit.Name;
+            switch (command)
+            {
+                case 1:
+                    {
+                        binForm.Serialize(stm, new_props);
+                        break;
+                    }
+                case 2:
+                    {
+                        binForm.Serialize(stm, new_w_set);
+                        binForm.Serialize(stm, new_props);
+                        break;
+                    }
+                default:
+                    {
+                        break;
+                    }
+            }
             
         }
     }

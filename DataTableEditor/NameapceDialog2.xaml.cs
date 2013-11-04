@@ -16,6 +16,7 @@ using System.Threading;
 using CoolSign.API;
 using CoolSign.API.Version1;
 using CoolSign.API.Version1.DataAccess;
+using ConfigClasses;
 
 namespace DataTableEditor
 {
