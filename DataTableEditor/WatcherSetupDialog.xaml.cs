@@ -34,6 +34,7 @@ namespace DataTableEditor
         public bool allOneRecord = true;
         public WatcherSetupDialog(string db_path, string table_oid, IDataTable table_to_edit, bool editing)
         {
+            /* TODO: Server-side integration */
             pathToDb = db_path;
             tbl_OID = table_oid;
             tableToEdit = table_to_edit;
