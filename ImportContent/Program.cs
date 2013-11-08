@@ -66,8 +66,9 @@ namespace ImportContent
         {
             TcpClient s = (TcpClient)data;
             NetworkStream netStream = s.GetStream();
+            MemoryStream memStream = new MemoryStream();
             IFormatter binForm = new BinaryFormatter();
-            byte[] cmdbuffer = new byte[1024];
+            byte[] buffer;
 
             /* Continue serving client until disconnect */
             while (true)
@@ -81,6 +82,7 @@ namespace ImportContent
                         {
                             try
                             {
+                                buffer = new byte[s.ReceiveBufferSize];
                                 setProps propsFromSend = (setProps)binForm.Deserialize(netStream);
                                 SetConfig setInList;
                                 if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
