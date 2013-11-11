@@ -66,14 +66,13 @@ namespace ImportContent
         {
             TcpClient s = (TcpClient)data;
             NetworkStream netStream = s.GetStream();
-            MemoryStream memStream = new MemoryStream();
             IFormatter binForm = new BinaryFormatter();
             byte[] buffer;
 
             /* Continue serving client until disconnect */
             while (true)
             {
-                Console.ReadLine();
+                //Console.ReadLine();
                 int command = (int)binForm.Deserialize(netStream);
                 netStream.Flush();
                 switch (command)
@@ -82,8 +81,24 @@ namespace ImportContent
                         {
                             try
                             {
-                                buffer = new byte[s.ReceiveBufferSize];
-                                setProps propsFromSend = (setProps)binForm.Deserialize(netStream);
+                                byte[] msgLen = new byte[4];
+                                netStream.Read(msgLen, 0, 4);
+                                int dataLen = BitConverter.ToInt32(msgLen, 0);
+
+                                byte[] msgData = new byte[dataLen];
+                                int dataRead = 0;
+                                do
+                                {
+                                    dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
+
+                                } while (dataRead < dataLen);
+                                // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
+                                
+                                //setProps propsFromSend = (setProps)binForm.Deserialize(netStream);
+                                MemoryStream memStream = new MemoryStream(msgData);
+                                setProps propsFromSend = (setProps)binForm.Deserialize(memStream);
+                                
+                                
                                 SetConfig setInList;
                                 if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
                                 {
@@ -91,6 +106,9 @@ namespace ImportContent
 
                                     /* Put the edited setings into the configuation class */
                                     setInList.all_props = propsFromSend;
+
+                                    // DEBUG: Print set in List
+                                    setInList.printConfig();
 
                                     /* Force a backup immediately after change has been accepted */
                                     sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
@@ -199,6 +217,11 @@ namespace ImportContent
             ASCIIEncoding asen = new ASCIIEncoding();
             s.Send(asen.GetBytes("The string was recieved by the server."));
             Console.WriteLine("\nSent Acknowledgement");*/
+        }
+
+        public static <T> safeRead<T>()
+        {
+
         }
 
         public static List<colConf> in_set;

@@ -35,17 +35,24 @@ namespace ServerBackendTester
                 /* Console.Write("Enter the string to be transmitted : "); */
 
                 String str = Console.ReadLine();
-                Stream stm = tcpclnt.GetStream();
+                NetworkStream stm = tcpclnt.GetStream();
+                byte[] sendingBytes;
+                MemoryStream ms = new MemoryStream();
                 BinaryFormatter binForm = new BinaryFormatter();
                 setProps sendcols = sendone.all_props;
                 try
                 {
-                    int command = 2;
+                    /*int command = 1;
                     binForm.Serialize(stm, command);
                     stm.Flush();
-                    binForm.Serialize(stm, sets.all_set[0]);
-                    binForm.Serialize(stm, sendcols);
-                    stm.Flush();
+                    binForm.Serialize(ms, sendcols);
+                    sendingBytes = ms.ToArray();
+                    byte[] dataLen = BitConverter.GetBytes((Int32)sendingBytes.Length);
+                    stm.Write(dataLen, 0, 4);
+                    stm.Write(sendingBytes, 0, sendingBytes.Length);
+                    stm.Flush();*/
+                    binForm.Serialize(stm, 1);
+                    safeWrite<setProps>(stm, sendcols);
                     
                 }
                 catch (Exception e)
@@ -73,6 +80,17 @@ namespace ServerBackendTester
                 Console.WriteLine("Error..... " + e.StackTrace);
             }
             //For the boilerplate example see: http://www.codeproject.com/Articles/1415/Introduction-to-TCP-client-server-in-C
+        }
+        public static void safeWrite<T>(NetworkStream netStream, T msg)
+        {
+            MemoryStream ms = new MemoryStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            binForm.Serialize(ms, msg);
+            byte[] bytesToSend = ms.ToArray();
+            byte[] dataLen = BitConverter.GetBytes((Int32)bytesToSend.Length);
+            netStream.Write(dataLen, 0, 4);
+            netStream.Write(bytesToSend, 0, bytesToSend.Length);
+            netStream.Flush();
         }
     }
 }
