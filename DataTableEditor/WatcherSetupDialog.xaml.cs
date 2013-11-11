@@ -75,6 +75,8 @@ namespace DataTableEditor
             }
             m_recordCombo.IsEnabled = true;
             XmlNode inXmlNode = xd.DocumentElement;
+            /* BOBEX: Here is the example of tree traversal, in fact, since it already finds all the nodes everytime you change the URL, you just have to remove the 
+             * non-relevant ones. The bigger problem will be appending a drop down box to a DataTable */
             traverseNodes(xd.ChildNodes, "");
             pos_xml_paths = pos_xml_paths.Distinct().ToList();
             pos_xml_paths.RemoveAll(ContainsHash);
@@ -251,11 +253,24 @@ namespace DataTableEditor
                     string[] column_names = { "Column Name", "80", "XML Path", "150" };
                     List<checkedData> addToGrid = new List<checkedData>();
                     int k = 0;
+                    /* BOBNI: Here is an example of data being added to a DataTable, though in this configuration, it is being added from file */
                     foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
                     {
                         colConf this_config = init_config.cols[k];
+                        /* BOBNI: We create a string that represents the XML path to the specified object: concat_path
+                         * Concat_path is comprised of the item of record (a generic path for simplifying paths for end users)
+                         * the 'description' which is the rest of the full XML path
+                         * and possibly an attribute (attributes are not encoded into XML's text data field, instead the values are stored like an 
+                         * attribute of an HTML tag) */
                         string concat_path = init_config.itemOfRec + this_config.description + (String.IsNullOrEmpty(this_config.attrib) ? "" : ("@" + this_config.attrib));
+                        
+                        /* BOBNI: Once we have the concatenated path, we add it the checkedData, data structure */
                         checkedData add_new = new checkedData() { Column_Name = field.Name, Xml_Path = concat_path };
+
+                        /* BOBNI: Your mission, should you choose to accept it, is to modify the CheckedData structure and this little segment of code so that, instead of
+                         * a plain text path, the data table only displays a drop-down box that has been populated by following the URL, getting a list of all paths, 
+                         * and then eliminating all paths that do not start with the "item of record". 
+                         * An example of the drop-down box can be found at the comment labeled BOBEX */
                         addToGrid.Add(add_new);
                         k++;
                     }
