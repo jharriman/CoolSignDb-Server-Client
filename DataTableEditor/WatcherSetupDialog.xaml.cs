@@ -198,6 +198,39 @@ namespace DataTableEditor
             }
         }
 
+        void m_recordBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            /* Clean up from previous state */
+            allOneRecord = false;
+            m_sourcePathBox.IsEnabled = false;
+            m_recordCombo.IsEnabled = false;
+            m_rowNumber.Visibility = System.Windows.Visibility.Visible;
+            m_numRowsTextBlock.Visibility = System.Windows.Visibility.Visible;
+
+            /* Add names of data sources */
+            string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150" };
+            List<uncheckedData> addToGrid = new List<uncheckedData>();
+            foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+            {
+                uncheckedData add_new = new uncheckedData() { column_name = field.Name };
+                addToGrid.Add(add_new);
+            }
+            m_dataGridChamleon.ItemsSource = addToGrid;
+
+            /* Update column names */
+            int i = 0;
+            foreach (DataGridColumn col in m_dataGridChamleon.Columns)
+            {
+                if (i > (column_names.Length - 1)) { break; }
+                col.Header = column_names[i];
+                if (i == 0) { col.IsReadOnly = true; } // So that the column_name (which is determined by the table) cannot be altered
+                col.Width = Convert.ToInt32(column_names[i + 1]);
+                if (column_names[i] == "Triggerable") { col.IsReadOnly = true; }
+                i += 2;
+            }
+
+        }
+
         void form_Init(bool editing, string db_path)
         {
             m_recordCombo.ItemsSource = pos_xml_paths;
@@ -327,39 +360,6 @@ namespace DataTableEditor
                 }
                 m_rowNumber.ItemsSource = row_num_options;
             }
-        }
-
-        void m_recordBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            /* Clean up from previous state */
-            allOneRecord = false;
-            m_sourcePathBox.IsEnabled = false;
-            m_recordCombo.IsEnabled = false;
-            m_rowNumber.Visibility = System.Windows.Visibility.Visible;
-            m_numRowsTextBlock.Visibility = System.Windows.Visibility.Visible;
-            
-            /* Add names of data sources */ 
-            string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150"};
-            List<uncheckedData> addToGrid = new List<uncheckedData>();
-            foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
-            {
-                uncheckedData add_new = new uncheckedData() { column_name = field.Name };
-                addToGrid.Add(add_new);
-            }
-            m_dataGridChamleon.ItemsSource = addToGrid;
-            
-            /* Update column names */
-            int i = 0;
-            foreach (DataGridColumn col in m_dataGridChamleon.Columns)
-            {
-                if (i > (column_names.Length - 1)) { break; }
-                col.Header = column_names[i];
-                if (i == 0) { col.IsReadOnly = true; } // So that the column_name (which is determined by the table) cannot be altered
-                col.Width = Convert.ToInt32(column_names[i + 1]);
-                if (column_names[i] == "Triggerable") { col.IsReadOnly = true; }
-                i += 2;
-            }
-            
         }
         
         void m_goToNamespaces_Click(object sender, RoutedEventArgs e)
