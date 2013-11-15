@@ -81,24 +81,7 @@ namespace ImportContent
                         {
                             try
                             {
-                                byte[] msgLen = new byte[4];
-                                netStream.Read(msgLen, 0, 4);
-                                int dataLen = BitConverter.ToInt32(msgLen, 0);
-
-                                byte[] msgData = new byte[dataLen];
-                                int dataRead = 0;
-                                do
-                                {
-                                    dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
-
-                                } while (dataRead < dataLen);
-                                // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
-                                
-                                //setProps propsFromSend = (setProps)binForm.Deserialize(netStream);
-                                MemoryStream memStream = new MemoryStream(msgData);
-                                setProps propsFromSend = (setProps)binForm.Deserialize(memStream);
-                                
-                                
+                                setProps propsFromSend = safeRead<setProps>(netStream);
                                 SetConfig setInList;
                                 if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
                                 {
@@ -112,15 +95,17 @@ namespace ImportContent
 
                                     /* Force a backup immediately after change has been accepted */
                                     sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+
+                                    /* TODO: Add a record to the log */
                                 }
                                 else
                                 {
                                     /* TODO: Warn client that this set is not in the list */
-                                }                                
+                                }
                             }
                             catch (Exception e)
                             {
-                                // Notify client, and do nothing
+                                // Notify client, and add event to log
                                 Console.ReadLine();
                             }
                             break;
@@ -137,11 +122,11 @@ namespace ImportContent
                                 {
                                     Console.WriteLine("Here!");
                                     /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
-                                    
+
                                     newConfig.all_props = propsToSend;
                                     sets.all_set.Add(setToAdd);
                                     sets.configs.Add(newConfig);
-                                    
+
                                     /* Force immediate backup */
                                     sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                                 }
@@ -178,7 +163,7 @@ namespace ImportContent
                                     /* TODO : Send Error to client */
                                 }
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
                                 Console.ReadLine();
                             }
@@ -203,25 +188,28 @@ namespace ImportContent
                             break;
                         }
                 }
-                //readFromClient(s);
-                //List<w_set> new_sets = in_set;
-                
             }
-
-            /* byte[] b = new byte[100];
-            int k = s.Receive(b);
-            Console.WriteLine("Recieved...");
-            for (int i = 0; i < k; i++)
-                Console.Write(Convert.ToChar(b[i]));
-
-            ASCIIEncoding asen = new ASCIIEncoding();
-            s.Send(asen.GetBytes("The string was recieved by the server."));
-            Console.WriteLine("\nSent Acknowledgement");*/
         }
 
-        public static <T> safeRead<T>()
+        public static T safeRead<T>(NetworkStream netStream)
         {
+            BinaryFormatter binForm = new BinaryFormatter();
+            byte[] msgLen = new byte[4];
+            netStream.Read(msgLen, 0, 4);
+            int dataLen = BitConverter.ToInt32(msgLen, 0);
 
+            byte[] msgData = new byte[dataLen];
+            int dataRead = 0;
+            do
+            {
+                dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
+
+            } while (dataRead < dataLen);
+            // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
+            
+            MemoryStream memStream = new MemoryStream(msgData);
+            T objFromSend = (T)binForm.Deserialize(memStream);
+            return objFromSend;
         }
 
         public static List<colConf> in_set;
