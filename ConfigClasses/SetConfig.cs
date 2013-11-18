@@ -9,6 +9,7 @@ namespace ConfigClasses
 {
     public class SetConfig
     {
+        public Mutex set_mutex = new Mutex();
         private string dbPath;
         private char[] DELIMARR = {';'};
         private string DELIM = ";";

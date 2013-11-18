@@ -508,10 +508,6 @@ namespace DataTableEditor
 
             // Send file to the server
             // TODO: Wait for confirmation of receipt from the server
-            Stream stm = tcpclnt.GetStream();
-            BinaryFormatter binForm = new BinaryFormatter();
-            int command = isEdit ? 1 : 2;
-            binForm.Serialize(stm, command);
             setProps new_props = new setProps();
             new_props.cols = new List<colConf>();
             new_props.ns_list = new List<nsConf>();
@@ -577,17 +573,23 @@ namespace DataTableEditor
             new_w_set.OID_STR = tbl_OID;
             new_w_set.TABLE_DB_PATH = pathToDb;
             new_w_set.TABLE_NAME = tableToEdit.Name;
+
+            NetworkStream netStream = tcpclnt.GetStream();
+            int command = isEdit ? 1 : 2;
+            safeWrite<int>(netStream, command);
             switch (command)
             {
                 case 1:
                     {
-                        binForm.Serialize(stm, new_props);
+                        safeWrite<setProps>(netStream, new_props);
+                        int response = safeRead<int>(netStream);
                         break;
                     }
                 case 2:
                     {
-                        binForm.Serialize(stm, new_w_set);
-                        binForm.Serialize(stm, new_props);
+                        safeWrite<w_set>(netStream, new_w_set);
+                        safeWrite<setProps>(netStream, new_props);
+                        int response = safeRead<int>(netStream);
                         break;
                     }
                 default:
@@ -596,6 +598,38 @@ namespace DataTableEditor
                     }
             }
             
+        }
+
+        public T safeRead<T>(NetworkStream netStream)
+        {
+            BinaryFormatter binForm = new BinaryFormatter();
+            byte[] msgLen = new byte[4];
+            netStream.Read(msgLen, 0, 4);
+            int dataLen = BitConverter.ToInt32(msgLen, 0);
+
+            byte[] msgData = new byte[dataLen];
+            int dataRead = 0;
+            do
+            {
+                dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
+
+            } while (dataRead < dataLen);
+            // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
+
+            MemoryStream memStream = new MemoryStream(msgData);
+            T objFromSend = (T)binForm.Deserialize(memStream);
+            return objFromSend;
+        }
+        public void safeWrite<T>(NetworkStream netStream, T msg)
+        {
+            MemoryStream ms = new MemoryStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            binForm.Serialize(ms, msg);
+            byte[] bytesToSend = ms.ToArray();
+            byte[] dataLen = BitConverter.GetBytes((Int32)bytesToSend.Length);
+            netStream.Write(dataLen, 0, 4);
+            netStream.Write(bytesToSend, 0, bytesToSend.Length);
+            netStream.Flush();
         }
     }
 }

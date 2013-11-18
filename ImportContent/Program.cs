@@ -23,16 +23,14 @@ namespace ImportContent
     {
         public static bool interrupted = false;
         private static WatchedSets sets;
+        private static string backup_path = (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
         [STAThread]
         public static int Main(string[] args)
         {
             /* Read in database from file */
             Console.WriteLine("Reading Database ........");
-            sets = new WatchedSets((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-            /*Console.WriteLine(sets.all_set[0].TABLE_DB_PATH);
-            SetConfig sendone = new SetConfig(sets.all_set[0].TABLE_DB_PATH, false);
-            sendone.printConfig();
-            Console.ReadLine();*/
+            sets = new WatchedSets(backup_path);
+            
             try
             {
                 IPAddress ipAd = IPAddress.Parse("128.135.167.97");
@@ -67,110 +65,31 @@ namespace ImportContent
             TcpClient s = (TcpClient)data;
             NetworkStream netStream = s.GetStream();
             IFormatter binForm = new BinaryFormatter();
-            byte[] buffer;
-
             /* Continue serving client until disconnect */
             while (true)
             {
-                //Console.ReadLine();
-                int command = (int)binForm.Deserialize(netStream);
+                int command = safeRead<int>(netStream);
                 netStream.Flush();
                 switch (command)
                 {
                     case 1: //edit existing set and ensure edit is valid
                         {
-                            try
-                            {
-                                setProps propsFromSend = safeRead<setProps>(netStream);
-                                SetConfig setInList;
-                                if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
-                                {
-                                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
-
-                                    /* Put the edited setings into the configuation class */
-                                    setInList.all_props = propsFromSend;
-
-                                    // DEBUG: Print set in List
-                                    setInList.printConfig();
-
-                                    /* Force a backup immediately after change has been accepted */
-                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-
-                                    /* TODO: Add a record to the log */
-                                }
-                                else
-                                {
-                                    /* TODO: Warn client that this set is not in the list */
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                // Notify client, and add event to log
-                                Console.ReadLine();
-                            }
+                            retSig(netStream, editExisting(netStream));
                             break;
                         }
                     case 2: // add a new set config to the watched sets
                         {
-                            try
-                            {
-                                w_set setToAdd = (w_set)binForm.Deserialize(netStream);
-                                setProps propsToSend = (setProps)binForm.Deserialize(netStream);
-                                SetConfig newConfig = new SetConfig("", true);
-                                SetConfig isInConfigs;
-                                if ((isInConfigs = sets.isInWatched(propsToSend.oidForWrite)) == null)
-                                {
-                                    Console.WriteLine("Here!");
-                                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
-
-                                    newConfig.all_props = propsToSend;
-                                    sets.all_set.Add(setToAdd);
-                                    sets.configs.Add(newConfig);
-
-                                    /* Force immediate backup */
-                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                                }
-                                else
-                                {
-                                    /* TODO: Notify client that configuration is already in the set */
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                // Notify client, and do nothing
-                                Console.ReadLine();
-                            }
+                            retSig(netStream, addNewSet(netStream));
                             break;
                         }
                     case 3: // Remove a configuration from the set
                         {
-                            try
-                            {
-                                string oid_from_client = (string)binForm.Deserialize(netStream);
-                                w_set inSet;
-                                if ((inSet = sets.w_setInAllSet(oid_from_client)) != null)
-                                {
-                                    SetConfig toRemove = sets.isInWatched(oid_from_client);
-                                    sets.all_set.Remove(inSet);
-                                    sets.configs.Remove(toRemove);
-                                    /* TODO : Set up server-side logging */
-
-                                    /* Force immediate backup */
-                                    sets.backupDb((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                                }
-                                else
-                                {
-                                    /* TODO : Send Error to client */
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                Console.ReadLine();
-                            }
+                            retSig(netStream, removeSet(netStream));
+                            break;
                         }
-                        break;
                     case 4: // Client requests list of WatchedSets information
                         {
+                            sendWatchedSets(netStream);
                             break;
                         }
                     case 5: // Client requests to update a particular WatchedSet (Mutex!)
@@ -188,6 +107,122 @@ namespace ImportContent
                             break;
                         }
                 }
+            }
+        }
+
+        public static void retSig(NetworkStream netStream, int response)
+        {
+           safeWrite<int>(netStream, response);
+        }
+
+        public static void sendWatchedSets(NetworkStream netStream)
+        {
+            safeWrite<List<w_set>>(netStream, sets.all_set);
+            safeWrite<List<SetConfig>>(netStream, sets.configs);
+        }
+        public static int removeSet(NetworkStream netStream)
+        {
+            try
+            {
+                string oid_from_client = safeRead<string>(netStream);
+                w_set inSet;
+                if ((inSet = sets.w_setInAllSet(oid_from_client)) != null)
+                {
+                    SetConfig toRemove = sets.isInWatched(oid_from_client);
+                    sets.all_set.Remove(inSet);
+                    sets.configs.Remove(toRemove);
+                    /* TODO : Set up server-side logging */
+
+                    /* Force immediate backup */
+                    sets.backupDb(backup_path);
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                    /* TODO : Send Error to client */
+                }
+            }
+            catch (Exception e)
+            {
+                return 2;
+            }
+
+        }
+        public static int addNewSet(NetworkStream netStream)
+        {
+            try
+            {
+                w_set setToAdd = safeRead<w_set>(netStream);
+                setProps propsToSend = safeRead<setProps>(netStream);
+                SetConfig newConfig = new SetConfig("", true);
+                SetConfig isInConfigs;
+                if ((isInConfigs = sets.isInWatched(propsToSend.oidForWrite)) == null)
+                {
+                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
+
+                    newConfig.all_props = propsToSend;
+                    sets.all_set.Add(setToAdd);
+                    sets.configs.Add(newConfig);
+
+                    // DEBUG: Print set in List
+                    newConfig.printConfig();
+
+                    /* Force immediate backup */
+                    sets.backupDb(backup_path);
+
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                    /* TODO: Notify client that configuration is already in the set */
+                }
+            }
+            catch (Exception e)
+            {
+                // Notify client, and do nothing
+                return 2;
+            }
+        }
+        public static int editExisting(NetworkStream netStream)
+        {
+            try
+            {
+                setProps propsFromSend = safeRead<setProps>(netStream);
+                SetConfig setInList;
+                if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
+                {
+                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
+
+                    /* Make sure the set isn't being edited by someone else */
+                    setInList.set_mutex.WaitOne();
+
+                    /* Put the edited setings into the configuation class */
+                    setInList.all_props = propsFromSend;
+
+                    // DEBUG: Print set in List
+                    setInList.printConfig();
+
+                    /* Force a backup immediately after change has been accepted */
+                    sets.backupDb(backup_path);
+
+                    /* TODO: Add a record to the log */
+
+                    setInList.set_mutex.ReleaseMutex();
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                    /* TODO: Warn client that this set is not in the list */
+                }
+            }
+            catch (Exception e)
+            {
+                // Notify client, and add event to log
+                return 2;
+                Console.ReadLine();
             }
         }
 
@@ -210,6 +245,17 @@ namespace ImportContent
             MemoryStream memStream = new MemoryStream(msgData);
             T objFromSend = (T)binForm.Deserialize(memStream);
             return objFromSend;
+        }
+        public static void safeWrite<T>(NetworkStream netStream, T msg)
+        {
+            MemoryStream ms = new MemoryStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            binForm.Serialize(ms, msg);
+            byte[] bytesToSend = ms.ToArray();
+            byte[] dataLen = BitConverter.GetBytes((Int32)bytesToSend.Length);
+            netStream.Write(dataLen, 0, 4);
+            netStream.Write(bytesToSend, 0, bytesToSend.Length);
+            netStream.Flush();
         }
 
         public static List<colConf> in_set;
@@ -237,8 +283,6 @@ namespace ImportContent
             while (!authenticated);
             while (!Program.interrupted)
             {
-                //Console.WriteLine("Updating internal database...");
-                //Console.WriteLine((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
                 foreach (w_set toLoad in sets.all_set)
                 {
                     workingConf = new SetConfig(toLoad.TABLE_DB_PATH, false);
