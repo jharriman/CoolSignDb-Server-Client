@@ -23,6 +23,7 @@ namespace ImportContent
     {
         public static bool interrupted = false;
         private static WatchedSets sets;
+        private static CoolSignSets cs_sets;
         private static string backup_path = (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
         [STAThread]
         public static int Main(string[] args)
@@ -30,6 +31,9 @@ namespace ImportContent
             /* Read in database from file */
             Console.WriteLine("Reading Database ........");
             sets = new WatchedSets(backup_path);
+
+            /* Initialize CoolSign Table List */
+            cs_sets = new CoolSignSets();
             
             try
             {
@@ -92,8 +96,10 @@ namespace ImportContent
                             sendWatchedSets(netStream);
                             break;
                         }
-                    case 5: // Client requests to update a particular WatchedSet (Mutex!)
+                    case 5: // Client requests list of all current CoolSign DataTables
                         {
+                            Console.Write("Received 5, sending . . . ");
+                            sendCSTables(netStream);
                             break;
                         }
                     case 6: // Client requests log report (Authentication, possibly?)
@@ -113,6 +119,11 @@ namespace ImportContent
         public static void retSig(NetworkStream netStream, int response)
         {
            safeWrite<int>(netStream, response);
+        }
+
+        public static void sendCSTables(NetworkStream netStream)
+        {
+            safeWrite<System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable>>(netStream, cs_sets.available_tables);
         }
 
         public static void sendWatchedSets(NetworkStream netStream)
