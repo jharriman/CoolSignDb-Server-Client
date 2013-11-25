@@ -22,6 +22,7 @@ using CoolSign.API;
 using CoolSign.API.Version1;
 using CoolSign.API.Version1.DataAccess;
 using ConfigClasses;
+using NetworkClasses;
 
 namespace DataTableEditor
 { 
@@ -33,17 +34,19 @@ namespace DataTableEditor
         private string pathToDb;
         private string tbl_OID;
         private IDataTable tableToEdit;
+        private avail_table table;
         private List<nsConf> ns_to_write;
         private char DELIM = ';';
         public bool allOneRecord = true;
         private TcpClient tcpclnt;
         private bool isEdit;
-        public WatcherSetupDialog(string db_path, string table_oid, IDataTable table_to_edit, bool editing, TcpClient client)
+        public WatcherSetupDialog(avail_table tabler, bool editing, SetConfig set, netConnect conn)
         {
-            pathToDb = db_path;
-            tbl_OID = table_oid;
-            tableToEdit = table_to_edit;
-            tcpclnt = client;
+            //pathToDb = db_path;
+            //tbl_OID = table_oid;
+            //tableToEdit = table_to_edit;
+            table = tabler;
+            tcpclnt = conn.tcpclnt;
             isEdit = editing;
             InitializeComponent();
 
@@ -63,7 +66,7 @@ namespace DataTableEditor
             h_recordPath.Click += h_recordPath_Click;
             h_advanceMode.Click += h_advanceMode_Click;
             h_namespaces.Click += h_namespaces_Click;
-            form_Init(editing, pathToDb);
+            form_Init(editing, set, tabler);
         }
         private List<string> pos_xml_paths = new List<string>();
         void m_sourcePathBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -189,9 +192,14 @@ namespace DataTableEditor
             m_numRowsTextBlock.Visibility = System.Windows.Visibility.Hidden;
             string[] column_names = { "Column Name", "80", "XML Path", "150" };
             List<checkedData> addToGrid = new List<checkedData>();
-            foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+            //foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+            //{
+            //    checkedData add_new = new checkedData() { Column_Name = field.Name };
+            //    addToGrid.Add(add_new);
+            //}
+            foreach (string column in table.table_cols)
             {
-                checkedData add_new = new checkedData() { Column_Name = field.Name };
+                checkedData add_new = new checkedData() { Column_Name = column };
                 addToGrid.Add(add_new);
             }
             m_dataGridChamleon.ItemsSource = addToGrid;
@@ -206,7 +214,7 @@ namespace DataTableEditor
             }
         }
 
-        void form_Init(bool editing, string db_path)
+        void form_Init(bool editing, SetConfig set, avail_table table)
         {
             m_recordCombo.ItemsSource = pos_xml_paths;
             /* Edit Init */
@@ -313,9 +321,14 @@ namespace DataTableEditor
                 m_numRowsTextBlock.Visibility = System.Windows.Visibility.Hidden;
                 string[] column_names = { "Column Name", "80", "XML Path", "150" };
                 List<checkedData> addToGrid = new List<checkedData>();
-                foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+                //foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+                //{
+                //    checkedData add_new = new checkedData() { Column_Name = field.Name };
+                //    addToGrid.Add(add_new);
+                //}
+                foreach (string column in table.table_cols)
                 {
-                    checkedData add_new = new checkedData() { Column_Name = field.Name };
+                    checkedData add_new = new checkedData() { Column_Name = column };
                     addToGrid.Add(add_new);
                 }
                 m_dataGridChamleon.ItemsSource = addToGrid;

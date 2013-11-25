@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerBackendTester", "Serv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigClasses", "ConfigClasses\ConfigClasses.csproj", "{3FBC677F-8901-424E-8CE6-F0EB059DFA61}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkClasses", "NetworkClasses\NetworkClasses.csproj", "{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +62,16 @@ Global
 		{3FBC677F-8901-424E-8CE6-F0EB059DFA61}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{3FBC677F-8901-424E-8CE6-F0EB059DFA61}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{3FBC677F-8901-424E-8CE6-F0EB059DFA61}.Release|x86.ActiveCfg = Release|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C40DD0EA-4D4D-4B39-9A6D-E1223B4D7352}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

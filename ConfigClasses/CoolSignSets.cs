@@ -9,6 +9,7 @@ using System.Threading;
 using System.Windows;
 using CoolSign.API;
 using CoolSign.API.Version1;
+using CoolSign.API.Version1.DataAccess;
 
 namespace ConfigClasses
 {
@@ -20,9 +21,11 @@ namespace ConfigClasses
         private IServerSession m_session;
         private string error;
         private string db_path = (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + "cs_dt.bin");
-        public System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable> available_tables;
+        public System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable> tables_from_server;
+        public List<avail_table> available_tables;
         public CoolSignSets()
         {
+            available_tables = new List<avail_table>();
             createSession();
             /* Setup backup thread */
             Thread backupRoutine = new Thread(refreshRoutine);
@@ -56,8 +59,8 @@ namespace ConfigClasses
                         else
                         {
                             error = "Failed login: " + result.ToString();
-                        }
-                        available_tables = safeRead<System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable>>(db_path);
+                        } 
+                        available_tables = safeRead<List<avail_table>>(db_path);
                     }
                 }
             }
@@ -76,7 +79,34 @@ namespace ConfigClasses
             {
                 if (result.IsSuccess)
                 {
-                    available_tables = result.Value.Items;
+                    tables_from_server = result.Value.Items;
+                    available_tables = new List<avail_table>();
+                    foreach (IDataTable table in tables_from_server)
+                    {
+                        var result2 = m_session.DataAccess.Brokers.DataTable.ReadSingle(m_session.ModelFactory.CreateSelectorById(table.Id), new IRelationshipMetaData[]
+                        {
+                            MetaData.DataTableToDataTableDesign, 
+                            MetaData.DataTableDesignToDataTableField, 
+                            MetaData.DataTableToFileInDataTable, 
+                            MetaData.DataTableToDataRow
+                        });
+                        if (result2.IsSuccess)
+                        {
+                            IDataTable t_table = result2.Value;
+                            List<string> t_table_oids = new List<string>();
+                            foreach (IDataTableField field in t_table.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+                            {
+                                t_table_oids.Add(field.Name);
+                            }
+                            available_tables.Add(new avail_table()
+                            {
+                                table_name = t_table.Name,
+                                table_oid = (string)t_table.Id,
+                                table_cols = t_table_oids
+
+                            });
+                        }
+                    }
                     error = "";
                 }
                 else
@@ -109,7 +139,7 @@ namespace ConfigClasses
         }
         public void backupTableList()
         {
-            safeWrite<System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable>>(db_path, available_tables);
+            safeWrite<List<avail_table>>(db_path, available_tables);
         }
 
         public static T safeRead<T>(string file_path)
@@ -156,6 +186,14 @@ namespace ConfigClasses
 
             ms.Close();
         }
+    }
+
+    [Serializable()]
+    public class avail_table
+    {
+        public string table_name { get; set; }
+        public string table_oid { get; set; }
+        public List<string> table_cols { get; set; }
     }
 
 }

@@ -23,6 +23,7 @@ using CoolSign.API;
 using CoolSign.API.Version1;
 using CoolSign.API.Version1.DataAccess;
 using ConfigClasses;
+using NetworkClasses;
 
 namespace DataTableEditor
 {
@@ -38,6 +39,7 @@ namespace DataTableEditor
         private ObservableCollection<IFileInDataTable> m_files;
         private WatchedSets dbsets;
         private TcpClient client;
+        private netConnect conn = null;
 
         public DataTableEditorWindow()
         {
@@ -58,59 +60,13 @@ namespace DataTableEditor
 
         void m_establishConnection_Click(object sender, RoutedEventArgs e)
         {
-            TcpClient tcpclnt = new TcpClient();
-            Console.WriteLine("Connecting.....");
-
-            tcpclnt.Connect("128.135.167.97", 8001);
-            // use the ipaddress as in the server program
-
-            Console.WriteLine("Connected");
-            /* Console.Write("Enter the string to be transmitted : "); */
-
+            conn = new netConnect("128.135.167.97", 8001);
             MessageBox.Show("Connected!");
-
-            NetworkStream netStream = tcpclnt.GetStream();
-            safeWrite<int>(netStream, 5);
-            //netStream.Flush();
-            System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable> available_tables =
-                safeRead<System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable>>(netStream);
+            conn.safeWrite<int>(5);
+            List<avail_table>available_tables = conn.safeRead<List<avail_table>>();
 
             m_watchServerComboBox.ItemsSource = available_tables;
-
-            client = tcpclnt;
             
-        }
-
-        public T safeRead<T>(NetworkStream netStream)
-        {
-            BinaryFormatter binForm = new BinaryFormatter();
-            byte[] msgLen = new byte[4];
-            netStream.Read(msgLen, 0, 4);
-            int dataLen = BitConverter.ToInt32(msgLen, 0);
-
-            byte[] msgData = new byte[dataLen];
-            int dataRead = 0;
-            do
-            {
-                dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
-
-            } while (dataRead < dataLen);
-            // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
-
-            MemoryStream memStream = new MemoryStream(msgData);
-            T objFromSend = (T)binForm.Deserialize(memStream);
-            return objFromSend;
-        }
-        public void safeWrite<T>(NetworkStream netStream, T msg)
-        {
-            MemoryStream ms = new MemoryStream();
-            BinaryFormatter binForm = new BinaryFormatter();
-            binForm.Serialize(ms, msg);
-            byte[] bytesToSend = ms.ToArray();
-            byte[] dataLen = BitConverter.GetBytes((Int32)bytesToSend.Length);
-            netStream.Write(dataLen, 0, 4);
-            netStream.Write(bytesToSend, 0, bytesToSend.Length);
-            netStream.Flush();
         }
 
         public void OnLoad()
@@ -140,8 +96,8 @@ namespace DataTableEditor
                 if (dbsets.isInAllSet((string)m_table.Id))
                 {
                     /* Start configuration/setup dialog */
-                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, true, client);
-                    bool? result = wsd.ShowDialog();
+                    //WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, true, conn);
+                    //bool? result = wsd.ShowDialog();
 
                 }
                 else
@@ -153,58 +109,78 @@ namespace DataTableEditor
 
         private void m_addTableToWatch_Click(object sender, RoutedEventArgs e)
         {
-            if (m_table != null)
+            /* Watch-server side data gathering */
+            avail_table to_check = m_watchServerComboBox.SelectedItem as avail_table;
+            conn.safeWrite<int>(4);
+            conn.safeWrite<string>(to_check.table_oid);
+
+            int comm = conn.safeRead<int>();
+            MessageBox.Show(Convert.ToString(comm));
+            if (comm == 7)
             {
-                /* Make sure the table we are adding is not in the table */
-                if (!dbsets.isInAllSet((string)m_table.Id))
-                {
-                    /* Start configuration/setup dialog */
-                    WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, false, client);
-                    bool? result = wsd.ShowDialog();
-
-                    /* Make sure the addition wasn't canceled */
-                    if (result.Value == true)
-                    {
-                        /* Add to working database */
-                        dbsets.addToWatchedSets((string)m_table.Id, m_table.Name, (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"));
-
-                        /* Save database to file */
-                        dbsets.saveToDbFile((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
-                    }
-
-                    /* Refresh working configuration (in case user wants to update the same table again without closing the window) */
-                    dbsets = new WatchedSets(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
-
-                }
-                else
-                {
-                    MessageBox.Show("Table is already being watched.");
-                }
-                /* MessageBox.Show((string)m_table.Id); 
-                using (FileStream fs = File.Open(Properties.Settings.Default.dbfilepath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
-                {
-                    StreamReader sr = new StreamReader(fs);
-                    StreamWriter sw = new StreamWriter(fs);
-                    MessageBox.Show("Worked!");
-                    bool inTable = false;
-                    while(!sr.EndOfStream)
-                    {
-                        var parts = sr.ReadLine().Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts[0] == (string)m_table.Id)
-                        {
-                            inTable = true;
-                            break; 
-                        }
-                    }
-                    if (inTable == false)
-                    {
-                        MessageBox.Show("HERE!");
-                        sw.WriteLine((string)m_table.Id + DELIM + m_table.Name); //Insert configuration file for ImportContent here
-                        sw.Flush();
-                    }
-                    fs.Close(); 
-                }*/
+                setProps new_props = conn.safeRead<setProps>();
             }
+            else if (comm == 8)
+            {
+                MessageBox.Show("Opening WatcherSetup");
+                WatcherSetupDialog wsd = new WatcherSetupDialog(to_check, false, null, conn);
+            }
+            
+
+
+            /* Old local server data gathering*/
+            //if (m_table != null)
+            //{
+            //    /* Make sure the table we are adding is not in the table */
+            //    if (!dbsets.isInAllSet((string)m_table.Id))
+            //    {
+            //        /* Start configuration/setup dialog */
+            //        WatcherSetupDialog wsd = new WatcherSetupDialog((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"), (string)m_table.Id, m_table, false, client);
+            //        bool? result = wsd.ShowDialog();
+
+            //        /* Make sure the addition wasn't canceled */
+            //        if (result.Value == true)
+            //        {
+            //            /* Add to working database */
+            //            dbsets.addToWatchedSets((string)m_table.Id, m_table.Name, (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + m_table.Name + "-db.txt"));
+
+            //            /* Save database to file */
+            //            dbsets.saveToDbFile((Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath));
+            //        }
+
+            //        /* Refresh working configuration (in case user wants to update the same table again without closing the window) */
+            //        dbsets = new WatchedSets(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
+
+            //    }
+            //    else
+            //    {
+            //        MessageBox.Show("Table is already being watched.");
+            //    }
+            //    /* MessageBox.Show((string)m_table.Id); 
+            //    using (FileStream fs = File.Open(Properties.Settings.Default.dbfilepath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+            //    {
+            //        StreamReader sr = new StreamReader(fs);
+            //        StreamWriter sw = new StreamWriter(fs);
+            //        MessageBox.Show("Worked!");
+            //        bool inTable = false;
+            //        while(!sr.EndOfStream)
+            //        {
+            //            var parts = sr.ReadLine().Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            //            if (parts[0] == (string)m_table.Id)
+            //            {
+            //                inTable = true;
+            //                break; 
+            //            }
+            //        }
+            //        if (inTable == false)
+            //        {
+            //            MessageBox.Show("HERE!");
+            //            sw.WriteLine((string)m_table.Id + DELIM + m_table.Name); //Insert configuration file for ImportContent here
+            //            sw.Flush();
+            //        }
+            //        fs.Close(); 
+            //    }*/
+            //}
         }
 
         private void m_addRowButton_Click(object sender, RoutedEventArgs e)

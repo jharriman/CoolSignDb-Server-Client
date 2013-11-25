@@ -91,9 +91,11 @@ namespace ImportContent
                             retSig(netStream, removeSet(netStream));
                             break;
                         }
-                    case 4: // Client requests list of WatchedSets information
+                    case 4: // Client requests information on a Table (Generate init file with only column info if there is not config on file)
                         {
-                            sendWatchedSets(netStream);
+                            //TODO: Check if the set they want is already being watched.
+                            Console.WriteLine("Received 4 . . . Sending");
+                            sendTableConfig(netStream);
                             break;
                         }
                     case 5: // Client requests list of all current CoolSign DataTables
@@ -123,13 +125,24 @@ namespace ImportContent
 
         public static void sendCSTables(NetworkStream netStream)
         {
-            safeWrite<System.Collections.Generic.ICollection<CoolSign.API.Version1.DataAccess.IDataTable>>(netStream, cs_sets.available_tables);
+            safeWrite<List<avail_table>>(netStream, cs_sets.available_tables);
         }
 
-        public static void sendWatchedSets(NetworkStream netStream)
+        public static void sendTableConfig(NetworkStream netStream)
         {
-            safeWrite<List<w_set>>(netStream, sets.all_set);
-            safeWrite<List<SetConfig>>(netStream, sets.configs);
+            string table_oid = safeRead<string>(netStream);
+            SetConfig to_send = sets.isInWatched(table_oid);
+            if (to_send != null)
+            {
+                safeWrite<int>(netStream, 7);
+                Console.WriteLine("7");
+                safeWrite<setProps>(netStream, to_send.all_props);
+            }
+            else
+            {
+                Console.WriteLine("8");
+                safeWrite<int>(netStream, 8);
+            }
         }
         public static int removeSet(NetworkStream netStream)
         {
