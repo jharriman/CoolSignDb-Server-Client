@@ -16,6 +16,7 @@ using CoolSign.API.Media;
 using CoolSign.API.Version2;
 using CoolSign.API.Version2.DataAccess;
 using ConfigClasses;
+using NetworkClasses;
 
 namespace ImportContent
 {
@@ -24,6 +25,7 @@ namespace ImportContent
         public static bool interrupted = false;
         private static WatchedSets sets;
         private static CoolSignSets cs_sets;
+        private static LogClass logging;
         private static string backup_path = (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
         [STAThread]
         public static int Main(string[] args)
@@ -34,6 +36,13 @@ namespace ImportContent
 
             /* Initialize CoolSign Table List */
             cs_sets = new CoolSignSets();
+
+            /* Initialize Log File */
+            logging = new LogClass(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + "server_log.txt");
+
+            /* Start updating thread */
+            Thread worker = new Thread(doWork);
+            worker.Start();
             
             try
             {
@@ -46,261 +55,29 @@ namespace ImportContent
                                   listen.LocalEndpoint);
                 Console.WriteLine("Waiting for a connection.....");
 
-                while (true)
+                while (true) //TODO: Make it so this loop can end gracefully
                 {
                     TcpClient s = listen.AcceptTcpClient();
                     Console.WriteLine("Connection accepted from " + s.Client.RemoteEndPoint);
-                    Thread clientThread = new Thread(Program.handleClient);
-                    clientThread.Start(s);
+                    Client new_client = new Client(s, logging, sets, cs_sets);
+                    //Thread clientThread = new Thread(Program.handleClient);
+                    //clientThread.Start(s);
                 }
                 /* clean up */
                 listen.Stop();
             }
             catch (Exception e)
             {
+                logging.write(e.Message, "127.0.0.1");
                 Console.WriteLine("Error..... " + e.StackTrace);
             }    
             //return doWork(); // doWork should be an ongoing thread [Note: we will need some sort of mutex in order to synchronize structural edits from outside users.]
             return 1; //Remove after constructing server routine
         }
 
-        public static void handleClient(object data)
-        {
-            TcpClient s = (TcpClient)data;
-            NetworkStream netStream = s.GetStream();
-            IFormatter binForm = new BinaryFormatter();
-            /* Continue serving client until disconnect */
-            while (true)
-            {
-                try
-                {
-                    int command = safeRead<int>(netStream);
-                    netStream.Flush();
-                    switch (command)
-                    {
-                        case 1: //edit existing set and ensure edit is valid
-                            {
-                                retSig(netStream, editExisting(netStream));
-                                break;
-                            }
-                        case 2: // add a new set config to the watched sets
-                            {
-                                retSig(netStream, addNewSet(netStream));
-                                break;
-                            }
-                        case 3: // Remove a configuration from the set
-                            {
-                                retSig(netStream, removeSet(netStream));
-                                break;
-                            }
-                        case 4: // Client requests information on a Table (Generate init file with only column info if there is not config on file)
-                            {
-                                //TODO: Check if the set they want is already being watched.
-                                Console.WriteLine("Received 4 . . . Sending");
-                                sendTableConfig(netStream);
-                                break;
-                            }
-                        case 5: // Client requests list of all current CoolSign DataTables
-                            {
-                                Console.Write("Received 5, sending . . . ");
-                                sendCSTables(netStream);
-                                break;
-                            }
-                        case 6: // Client requests log report (Authentication, possibly?)
-                            {
-                                break;
-                            }
-                        default:
-                            {
-                                Console.WriteLine("Invalid communiction");
-                                /* Send message back to the client */
-                                break;
-                            }
-                    }
-                }
-                catch (SerializationException)
-                {
-                    s.Close();
-                    return;
-                }
-                catch (SocketException)
-                {
-                    s.Close();
-                    return;
-                }
-            }
-        }
-
-        public static void retSig(NetworkStream netStream, int response)
-        {
-           safeWrite<int>(netStream, response);
-        }
-
-        public static void sendCSTables(NetworkStream netStream)
-        {
-            safeWrite<List<avail_table>>(netStream, cs_sets.available_tables);
-        }
-
-        public static void sendTableConfig(NetworkStream netStream)
-        {
-            string table_oid = safeRead<string>(netStream);
-            SetConfig to_send = sets.isInWatched(table_oid);
-            if (to_send != null)
-            {
-                safeWrite<int>(netStream, 7);
-                Console.WriteLine("7");
-                safeWrite<setProps>(netStream, to_send.all_props);
-            }
-            else
-            {
-                Console.WriteLine("8");
-                safeWrite<int>(netStream, 8);
-            }
-        }
-        public static int removeSet(NetworkStream netStream)
-        {
-            try
-            {
-                string oid_from_client = safeRead<string>(netStream);
-                w_set inSet;
-                if ((inSet = sets.w_setInAllSet(oid_from_client)) != null)
-                {
-                    SetConfig toRemove = sets.isInWatched(oid_from_client);
-                    sets.all_set.Remove(inSet);
-                    sets.configs.Remove(toRemove);
-                    /* TODO : Set up server-side logging */
-
-                    /* Force immediate backup */
-                    sets.backupDb(backup_path);
-                    return 0;
-                }
-                else
-                {
-                    return 1;
-                    /* TODO : Send Error to client */
-                }
-            }
-            catch (Exception e)
-            {
-                return 2;
-            }
-
-        }
-        public static int addNewSet(NetworkStream netStream)
-        {
-            try
-            {
-                w_set setToAdd = safeRead<w_set>(netStream);
-                setProps propsToSend = safeRead<setProps>(netStream);
-                SetConfig newConfig = new SetConfig("", true);
-                SetConfig isInConfigs;
-                if ((isInConfigs = sets.isInWatched(propsToSend.oidForWrite)) == null)
-                {
-                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
-
-                    newConfig.all_props = propsToSend;
-                    sets.all_set.Add(setToAdd);
-                    sets.configs.Add(newConfig);
-
-                    // DEBUG: Print set in List
-                    newConfig.printConfig();
-
-                    /* Force immediate backup */
-                    sets.backupDb(backup_path);
-
-                    return 0;
-                }
-                else
-                {
-                    return 1;
-                    /* TODO: Notify client that configuration is already in the set */
-                }
-            }
-            catch (Exception e)
-            {
-                // Notify client, and do nothing
-                return 2;
-            }
-        }
-        public static int editExisting(NetworkStream netStream)
-        {
-            try
-            {
-                setProps propsFromSend = safeRead<setProps>(netStream);
-                SetConfig setInList;
-                if ((setInList = sets.isInWatched(propsFromSend.oidForWrite)) != null)
-                {
-                    /* TODO: Test configuration to make sure it runs without errors before adding it to the server */
-
-                    /* Make sure the set isn't being edited by someone else */
-                    setInList.set_mutex.WaitOne();
-
-                    /* Put the edited setings into the configuation class */
-                    setInList.all_props = propsFromSend;
-
-                    // DEBUG: Print set in List
-                    setInList.printConfig();
-
-                    /* Force a backup immediately after change has been accepted */
-                    sets.backupDb(backup_path);
-
-                    /* TODO: Add a record to the log */
-
-                    setInList.set_mutex.ReleaseMutex();
-                    return 0;
-                }
-                else
-                {
-                    return 1;
-                    /* TODO: Warn client that this set is not in the list */
-                }
-            }
-            catch (Exception e)
-            {
-                // Notify client, and add event to log
-                return 2;
-                Console.ReadLine();
-            }
-        }
-
-        public static T safeRead<T>(NetworkStream netStream)
-        {
-            BinaryFormatter binForm = new BinaryFormatter();
-            byte[] msgLen = new byte[4];
-            netStream.Read(msgLen, 0, 4);
-            int dataLen = BitConverter.ToInt32(msgLen, 0);
-
-            byte[] msgData = new byte[dataLen];
-            int dataRead = 0;
-            do
-            {
-                dataRead += netStream.Read(msgData, dataRead, (dataLen - dataRead));
-
-            } while (dataRead < dataLen);
-            // Code above from: http://stackoverflow.com/questions/2316397/sending-and-receiving-custom-objects-using-tcpclient-class-in-c-sharp
-            
-            MemoryStream memStream = new MemoryStream(msgData);
-            T objFromSend = (T)binForm.Deserialize(memStream);
-            return objFromSend;
-        }
-        public static void safeWrite<T>(NetworkStream netStream, T msg)
-        {
-            MemoryStream ms = new MemoryStream();
-            BinaryFormatter binForm = new BinaryFormatter();
-            binForm.Serialize(ms, msg);
-            byte[] bytesToSend = ms.ToArray();
-            byte[] dataLen = BitConverter.GetBytes((Int32)bytesToSend.Length);
-            netStream.Write(dataLen, 0, 4);
-            netStream.Write(bytesToSend, 0, bytesToSend.Length);
-            netStream.Flush();
-        }
-
-        public static List<colConf> in_set;
-
-        public static int doWork()
+        public static void doWork()
         {
             /* TODO: Divide this work into proper units */
-            int ret = 0;
             Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e)
             {
                 Program.interrupted = true;
@@ -359,7 +136,6 @@ namespace ImportContent
                 Console.WriteLine("Finished... Sleeping...");
                 Thread.Sleep(900000);
             }
-            return ret;
         }
 
         private static SetConfig workingConf;
@@ -374,16 +150,6 @@ namespace ImportContent
                 int ncPort = 80;9(*/
                 Oid targetTable = new Oid(workingConf.all_props.oidForWrite);
 
-                //using (session /*IServerSession session = CSAPI.Create().CreateServerSession(ncHostname, ncPort)*/)
-                //{
-                //if (false/*!Authenticate(session)*/)
-                //{
-                //    session.Dispose();
-                //    return -1;
-                //}
-                //    else
-                //    {
-                        /* Get access to read the table */
                 try
                 {
                     var result = session.DataAccess.Brokers.DataTable.ReadSingle(

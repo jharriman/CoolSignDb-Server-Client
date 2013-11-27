@@ -90,6 +90,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client.cs" />
     <Compile Include="KeyValuePair.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -143,6 +144,10 @@
     <ProjectReference Include="..\ConfigClasses\ConfigClasses.csproj">
       <Project>{3fbc677f-8901-424e-8ce6-f0eb059dfa61}</Project>
       <Name>ConfigClasses</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NetworkClasses\NetworkClasses.csproj">
+      <Project>{c40dd0ea-4d4d-4b39-9a6d-e1223b4d7352}</Project>
+      <Name>NetworkClasses</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
