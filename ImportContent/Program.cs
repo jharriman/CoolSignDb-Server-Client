@@ -38,7 +38,9 @@ namespace ImportContent
             cs_sets = new CoolSignSets();
 
             /* Initialize Log File */
-            logging = new LogClass(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + "server_log.txt");
+            logging = new LogClass(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + "server_log.txt", new Mutex());
+
+            /* TODO: Need a session class that handles the sessions for all threads */
 
             /* Start updating thread */
             Thread worker = new Thread(doWork);
