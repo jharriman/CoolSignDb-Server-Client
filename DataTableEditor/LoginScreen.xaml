@@ -1,0 +1,15 @@
+﻿<Window x:Class="DataTableEditor.LoginScreen"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LoginScreen" Height="185" Width="475">
+    <Grid Margin="0,0,0,-2">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="m_userName" HorizontalAlignment="Left" Height="21" Margin="57,40,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="332"/>
+        <Button x:Name="m_connect" Content="Connect" HorizontalAlignment="Left" Height="22" Margin="129,92,0,0" VerticalAlignment="Top" Width="93"/>
+        <Button x:Name="m_cancel" Content="Cancel" HorizontalAlignment="Left" Height="22" Margin="227,92,0,0" VerticalAlignment="Top" Width="94"/>
+        <PasswordBox x:Name="m_password" HorizontalAlignment="Left" Height="21" Margin="57,66,0,0" VerticalAlignment="Top" Width="332"/>
+
+    </Grid>
+</Window>

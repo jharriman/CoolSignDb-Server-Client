@@ -31,9 +31,9 @@ namespace DataTableEditor
     /// </summary>
     public partial class WatcherSetupDialog : Window
     {
-        //private string pathToDb;
-        //private string tbl_OID;
-        //private IDataTable tableToEdit;
+        private string pathToDb;
+        private string tbl_OID;
+        private IDataTable tableToEdit;
         private avail_table table;
         private List<nsConf> ns_to_write;
         private char DELIM = ';';

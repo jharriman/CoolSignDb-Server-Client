@@ -41,9 +41,10 @@ namespace DataTableEditor
         private TcpClient client;
         private netConnect conn = null;
 
-        public DataTableEditorWindow()
+        public DataTableEditorWindow(netConnect conn_in)
         {
             m_api = CSAPI.Create();
+            conn = conn_in;
             
             InitializeComponent();
 
@@ -54,24 +55,16 @@ namespace DataTableEditor
             m_addRowButton.Click += m_addRowButton_Click;
             m_saveRowsButton.Click += m_saveRowsButton_Click;
             m_addTableToWatch.Click += m_addTableToWatch_Click;
-            m_establishConnection.Click += m_establishConnection_Click;
-        }
-
-        void m_establishConnection_Click(object sender, RoutedEventArgs e)
-        {
-            conn = new netConnect("128.135.167.97", 8001);
-            MessageBox.Show("Connected!");
-            conn.safeWrite<int>(5);
-            List<avail_table>available_tables = conn.safeRead<List<avail_table>>();
-
-            m_watchServerComboBox.ItemsSource = available_tables;
-            
         }
 
         public void OnLoad()
         {
             dbsets = new WatchedSets(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + Properties.Settings.Default.dbfilepath);
             m_serverUrl.Text = Properties.Settings.Default.defaultserverip;
+            
+            conn.safeWrite<int>(5);
+            List<avail_table> available_tables = conn.safeRead<List<avail_table>>();
+            m_watchServerComboBox.ItemsSource = available_tables;
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
