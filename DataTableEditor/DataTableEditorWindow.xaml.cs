@@ -54,7 +54,6 @@ namespace DataTableEditor
             m_addRowButton.Click += m_addRowButton_Click;
             m_saveRowsButton.Click += m_saveRowsButton_Click;
             m_addTableToWatch.Click += m_addTableToWatch_Click;
-            m_editWatchSets.Click += m_editWatchSets_Click;
             m_establishConnection.Click += m_establishConnection_Click;
         }
 
@@ -115,15 +114,17 @@ namespace DataTableEditor
             conn.safeWrite<string>(to_check.table_oid);
 
             int comm = conn.safeRead<int>();
-            MessageBox.Show(Convert.ToString(comm));
             if (comm == 7)
             {
                 setProps new_props = conn.safeRead<setProps>();
+                SetConfig edit_set = new SetConfig(new_props);
+                WatcherSetupDialog wsd = new WatcherSetupDialog(to_check, true, edit_set, conn);
+                bool? result = wsd.ShowDialog();
             }
             else if (comm == 8)
             {
-                MessageBox.Show("Opening WatcherSetup");
                 WatcherSetupDialog wsd = new WatcherSetupDialog(to_check, false, null, conn);
+                bool? result = wsd.ShowDialog();
             }
             
 

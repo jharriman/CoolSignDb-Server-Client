@@ -31,9 +31,9 @@ namespace DataTableEditor
     /// </summary>
     public partial class WatcherSetupDialog : Window
     {
-        private string pathToDb;
-        private string tbl_OID;
-        private IDataTable tableToEdit;
+        //private string pathToDb;
+        //private string tbl_OID;
+        //private IDataTable tableToEdit;
         private avail_table table;
         private List<nsConf> ns_to_write;
         private char DELIM = ';';
@@ -192,11 +192,6 @@ namespace DataTableEditor
             m_numRowsTextBlock.Visibility = System.Windows.Visibility.Hidden;
             string[] column_names = { "Column Name", "80", "XML Path", "150" };
             List<checkedData> addToGrid = new List<checkedData>();
-            //foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
-            //{
-            //    checkedData add_new = new checkedData() { Column_Name = field.Name };
-            //    addToGrid.Add(add_new);
-            //}
             foreach (string column in table.table_cols)
             {
                 checkedData add_new = new checkedData() { Column_Name = column };
@@ -214,22 +209,54 @@ namespace DataTableEditor
             }
         }
 
+        void m_recordBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            /* Clean up from previous state */
+            allOneRecord = false;
+            m_sourcePathBox.IsEnabled = false;
+            m_recordCombo.IsEnabled = false;
+            m_rowNumber.Visibility = System.Windows.Visibility.Visible;
+            m_numRowsTextBlock.Visibility = System.Windows.Visibility.Visible;
+
+            /* Add names of data sources */
+            string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150" };
+            List<uncheckedData> addToGrid = new List<uncheckedData>();
+            foreach (string column in table.table_cols)
+            {
+                uncheckedData add_new = new uncheckedData() { column_name = column };
+                addToGrid.Add(add_new);
+            }
+            m_dataGridChamleon.ItemsSource = addToGrid;
+
+            /* Update column names */
+            int i = 0;
+            foreach (DataGridColumn col in m_dataGridChamleon.Columns)
+            {
+                if (i > (column_names.Length - 1)) { break; }
+                col.Header = column_names[i];
+                if (i == 0) { col.IsReadOnly = true; } // So that the column_name (which is determined by the table) cannot be altered
+                col.Width = Convert.ToInt32(column_names[i + 1]);
+                if (column_names[i] == "Triggerable") { col.IsReadOnly = true; }
+                i += 2;
+            }
+
+        }
+
         void form_Init(bool editing, SetConfig set, avail_table table)
         {
             m_recordCombo.ItemsSource = pos_xml_paths;
             /* Edit Init */
             if (editing)
             {
-                /*
-                SetConfig init_config = new SetConfig(db_path, false);
-                ns_to_write = init_config.ns_list;
-                allOneRecord = init_config.allOneRecord;
+                SetConfig init_config = set;
+                ns_to_write = init_config.all_props.ns_list;
+                allOneRecord = init_config.all_props.allOneRecord;
                 if (allOneRecord)
                 {
                     m_sourcePathBox.IsEnabled = true;
                     m_recordCombo.IsEnabled = false;
-                    m_sourcePathBox.Text = init_config.sourceUrl;
-                    m_recordCombo.Text = init_config.itemOfRec;
+                    m_sourcePathBox.Text = init_config.all_props.sourceUrl;
+                    m_recordCombo.Text = init_config.all_props.itemOfRec;
                     m_rowNumber.Visibility = System.Windows.Visibility.Hidden;
                     m_numRowsTextBlock.Visibility = System.Windows.Visibility.Hidden;
                     string[] column_names = { "Column Name", "80", "XML Path", "150" };
@@ -237,8 +264,8 @@ namespace DataTableEditor
                     int k = 0;
                     foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
                     {
-                        colConf this_config = init_config.cols[k];
-                        string concat_path = init_config.itemOfRec + this_config.description + (String.IsNullOrEmpty(this_config.attrib) ? "" : ("@" + this_config.attrib));
+                        colConf this_config = init_config.all_props.cols[k];
+                        string concat_path = init_config.all_props.itemOfRec + this_config.description + (String.IsNullOrEmpty(this_config.attrib) ? "" : ("@" + this_config.attrib));
                         checkedData add_new = new checkedData() { Column_Name = field.Name, Xml_Path = concat_path };
                         addToGrid.Add(add_new);
                         k++;
@@ -274,13 +301,13 @@ namespace DataTableEditor
                     string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150" };
                     List<uncheckedData> addToGrid = new List<uncheckedData>();
                     int k = 0;
-                    foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+                    foreach (string col_name in table.table_cols)
                     {
-                        colConf this_config = init_config.cols[k];
+                        colConf this_config = init_config.all_props.cols[k];
                         string concat_path = this_config.description + (String.IsNullOrEmpty(this_config.attrib) ? "" : ("@" + this_config.attrib));
                         uncheckedData add_new = new uncheckedData() 
                         { 
-                            column_name = field.Name, 
+                            column_name = col_name, 
                             source = this_config.source, 
                             xml_path = concat_path,
                             is_triggerable = this_config.firesTrigger,
@@ -309,8 +336,8 @@ namespace DataTableEditor
                         row_num_options.Add(j);
                     }
                     m_rowNumber.ItemsSource = row_num_options;
-                    m_rowNumber.SelectedIndex = init_config.numRows - 1;
-                } */
+                    m_rowNumber.SelectedIndex = init_config.all_props.numRows - 1;
+                }
             }
             else /* Add Init */
             {
@@ -321,11 +348,6 @@ namespace DataTableEditor
                 m_numRowsTextBlock.Visibility = System.Windows.Visibility.Hidden;
                 string[] column_names = { "Column Name", "80", "XML Path", "150" };
                 List<checkedData> addToGrid = new List<checkedData>();
-                //foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
-                //{
-                //    checkedData add_new = new checkedData() { Column_Name = field.Name };
-                //    addToGrid.Add(add_new);
-                //}
                 foreach (string column in table.table_cols)
                 {
                     checkedData add_new = new checkedData() { Column_Name = column };
@@ -349,39 +371,6 @@ namespace DataTableEditor
                 }
                 m_rowNumber.ItemsSource = row_num_options;
             }
-        }
-
-        void m_recordBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            /* Clean up from previous state */
-            allOneRecord = false;
-            m_sourcePathBox.IsEnabled = false;
-            m_recordCombo.IsEnabled = false;
-            m_rowNumber.Visibility = System.Windows.Visibility.Visible;
-            m_numRowsTextBlock.Visibility = System.Windows.Visibility.Visible;
-            
-            /* Add names of data sources */ 
-            string[] column_names = { "Column Name", "80", "Source URL", "150", "XML Path", "150", "Triggerable?", "75", "Trigger ID", "150"};
-            List<uncheckedData> addToGrid = new List<uncheckedData>();
-            foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
-            {
-                uncheckedData add_new = new uncheckedData() { column_name = field.Name };
-                addToGrid.Add(add_new);
-            }
-            m_dataGridChamleon.ItemsSource = addToGrid;
-            
-            /* Update column names */
-            int i = 0;
-            foreach (DataGridColumn col in m_dataGridChamleon.Columns)
-            {
-                if (i > (column_names.Length - 1)) { break; }
-                col.Header = column_names[i];
-                if (i == 0) { col.IsReadOnly = true; } // So that the column_name (which is determined by the table) cannot be altered
-                col.Width = Convert.ToInt32(column_names[i + 1]);
-                if (column_names[i] == "Triggerable") { col.IsReadOnly = true; }
-                i += 2;
-            }
-            
         }
         
         void m_goToNamespaces_Click(object sender, RoutedEventArgs e)
@@ -646,3 +635,8 @@ namespace DataTableEditor
         }
     }
 }
+//foreach (IDataTableField field in tableToEdit.DataTableDesigns.Items.FirstOrDefault().DataTableFields.Items)
+//{
+//    checkedData add_new = new checkedData() { Column_Name = field.Name };
+//    addToGrid.Add(add_new);
+//}

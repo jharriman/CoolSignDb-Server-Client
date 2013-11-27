@@ -70,6 +70,10 @@ namespace ConfigClasses
 
             }
         }
+        public SetConfig(setProps init)
+        {
+            all_props = init;
+        }
         public void addToList(string name_of_col, string description, string attrib, string source, bool trigger, string trigger_id)
         {
             colConf to_add = new colConf();

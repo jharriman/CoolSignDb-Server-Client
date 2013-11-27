@@ -72,48 +72,61 @@ namespace ImportContent
             /* Continue serving client until disconnect */
             while (true)
             {
-                int command = safeRead<int>(netStream);
-                netStream.Flush();
-                switch (command)
+                try
                 {
-                    case 1: //edit existing set and ensure edit is valid
-                        {
-                            retSig(netStream, editExisting(netStream));
-                            break;
-                        }
-                    case 2: // add a new set config to the watched sets
-                        {
-                            retSig(netStream, addNewSet(netStream));
-                            break;
-                        }
-                    case 3: // Remove a configuration from the set
-                        {
-                            retSig(netStream, removeSet(netStream));
-                            break;
-                        }
-                    case 4: // Client requests information on a Table (Generate init file with only column info if there is not config on file)
-                        {
-                            //TODO: Check if the set they want is already being watched.
-                            Console.WriteLine("Received 4 . . . Sending");
-                            sendTableConfig(netStream);
-                            break;
-                        }
-                    case 5: // Client requests list of all current CoolSign DataTables
-                        {
-                            Console.Write("Received 5, sending . . . ");
-                            sendCSTables(netStream);
-                            break;
-                        }
-                    case 6: // Client requests log report (Authentication, possibly?)
-                        {
-                            break;
-                        }
-                    default:
-                        {
-                            Console.WriteLine("Invalid communiction");
-                            /* Send message back to the client */
-                            break;
-                        }
+                    int command = safeRead<int>(netStream);
+                    netStream.Flush();
+                    switch (command)
+                    {
+                        case 1: //edit existing set and ensure edit is valid
+                            {
+                                retSig(netStream, editExisting(netStream));
+                                break;
+                            }
+                        case 2: // add a new set config to the watched sets
+                            {
+                                retSig(netStream, addNewSet(netStream));
+                                break;
+                            }
+                        case 3: // Remove a configuration from the set
+                            {
+                                retSig(netStream, removeSet(netStream));
+                                break;
+                            }
+                        case 4: // Client requests information on a Table (Generate init file with only column info if there is not config on file)
+                            {
+                                //TODO: Check if the set they want is already being watched.
+                                Console.WriteLine("Received 4 . . . Sending");
+                                sendTableConfig(netStream);
+                                break;
+                            }
+                        case 5: // Client requests list of all current CoolSign DataTables
+                            {
+                                Console.Write("Received 5, sending . . . ");
+                                sendCSTables(netStream);
+                                break;
+                            }
+                        case 6: // Client requests log report (Authentication, possibly?)
+                            {
+                                break;
+                            }
+                        default:
+                            {
+                                Console.WriteLine("Invalid communiction");
+                                /* Send message back to the client */
+                                break;
+                            }
+                    }
+                }
+                catch (SerializationException)
+                {
+                    s.Close();
+                    return;
+                }
+                catch (SocketException)
+                {
+                    s.Close();
+                    return;
                 }
             }
         }
